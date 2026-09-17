@@ -47,7 +47,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
     }
   }
   const fileInput = <input ref={input} className="hidden-input" type="file" multiple
-    aria-label="Choose files" accept="application/pdf,image/jpeg,image/png,image/webp"
+    aria-label="Import document files" accept="application/pdf,image/jpeg,image/png,image/webp"
     disabled={locked} onChange={event => {
       const files = Array.from(event.currentTarget.files ?? []);
       event.currentTarget.value = '';
