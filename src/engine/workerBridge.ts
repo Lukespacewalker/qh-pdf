@@ -56,8 +56,13 @@ export class PdfWorkerBridge {
       if (options.signal) {
         job.abortListener = () => {
           if (!this.pending.delete(jobId)) return;
+          this.cleanup(job);
           worker.postMessage({ type: 'cancel', jobId } satisfies PdfWorkerRequest);
           reject(abortError());
+          if (this.pending.size === 0 && this.worker === worker) {
+            worker.terminate();
+            this.worker = null;
+          }
         };
         options.signal.addEventListener('abort', job.abortListener, { once: true });
       }
@@ -67,8 +72,8 @@ export class PdfWorkerBridge {
   }
 
   dispose(): void {
-    for (const [jobId, job] of this.pending) {
-      this.cleanup(jobId, job);
+    for (const job of this.pending.values()) {
+      this.cleanup(job);
       job.reject(abortError());
     }
     this.pending.clear();
@@ -82,8 +87,8 @@ export class PdfWorkerBridge {
     worker.onmessage = event => this.handleMessage(event.data as PdfWorkerResponse);
     worker.onerror = event => {
       const error = new AppError('export-failed', event.message || 'The PDF worker stopped unexpectedly.');
-      for (const [jobId, job] of this.pending) {
-        this.cleanup(jobId, job);
+      for (const job of this.pending.values()) {
+        this.cleanup(job);
         job.reject(error);
       }
       this.pending.clear();
@@ -102,7 +107,7 @@ export class PdfWorkerBridge {
       return;
     }
     this.pending.delete(message.jobId);
-    this.cleanup(message.jobId, job);
+    this.cleanup(job);
     if (message.type === 'success') {
       job.resolve(new Blob([message.payload], { type: 'application/pdf' }));
     } else if (message.type === 'cancelled') {
@@ -112,7 +117,7 @@ export class PdfWorkerBridge {
     }
   }
 
-  private cleanup(_jobId: string, job: PendingJob): void {
+  private cleanup(job: PendingJob): void {
     if (job.signal && job.abortListener) job.signal.removeEventListener('abort', job.abortListener);
   }
 }
