@@ -1,15 +1,12 @@
-name: Bootstrap stabilization lockfile
-
+name: Bootstrap stabilization assets and lock
 on:
   push:
     branches: [fix/prototype-stabilization]
     paths: [.github/workflows/bootstrap-lock.yml]
-
 permissions:
   contents: write
-
 jobs:
-  lock:
+  bootstrap:
     if: github.repository == 'Lukespacewalker/qh-pdf' && github.ref == 'refs/heads/fix/prototype-stabilization'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -21,16 +18,38 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
-      - name: Resolve lockfile without running dependency scripts
+      - name: Decode and validate all assets before writing
+        shell: python
         run: |
-          test ! -e package-lock.json
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-      - name: Commit only the generated lockfile to the working branch
+          import base64, hashlib
+          from pathlib import Path
+          expected = {
+            'quack-empty-state': '137538ed74becc27ed7113a9232f73add754d59049ceb520aa5c505391605467',
+            'quack-working': '48c945a43a6c5de4a98887e3e256514a60e6a0c28ac579c24432719171d75c8a',
+            'honk-error': '493825d2fa5490825891156c6342cee2068daf3537a34b45403f513cb37fc936',
+          }
+          decoded = {}
+          for name, digest in expected.items():
+            parts = sorted((Path('.asset-transfer') / name).glob('*.txt'), key=lambda p: int(p.stem))
+            text = ''.join(''.join(p.read_text().split()) for p in parts)
+            data = base64.b64decode(text, validate=True)
+            actual = hashlib.sha256(data).hexdigest()
+            print(name, len(data), actual)
+            if actual != digest:
+              raise ValueError(f'Asset checksum mismatch: {name}')
+            if data[:4] != b'RIFF' or data[8:12] != b'WEBP':
+              raise ValueError('Invalid WebP header')
+            decoded[name] = data
+          for name, data in decoded.items():
+            (Path('public/mascots') / f'{name}.webp').write_bytes(data)
+      - name: Refresh npm lockfile without lifecycle scripts
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Commit only verified assets and lockfile to working branch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add package-lock.json
-          git commit -m 'chore: generate npm lockfile on GitHub runner'
+          git add package-lock.json public/mascots/quack-empty-state.webp public/mascots/quack-working.webp public/mascots/honk-error.webp
+          git diff --cached --quiet && exit 0
+          git commit -m 'chore: restore verified mascot derivatives and refresh npm lock'
           git push origin HEAD:fix/prototype-stabilization
-
-# Temporary first-party bootstrap. Remove before merging this PR.
+# Temporary transfer workflow. Remove along with .asset-transfer before merging.
