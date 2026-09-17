@@ -1,0 +1,36 @@
+name: Bootstrap stabilization lockfile
+
+on:
+  push:
+    branches: [fix/prototype-stabilization]
+    paths: [.github/workflows/bootstrap-lock.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    if: github.repository == 'Lukespacewalker/qh-pdf' && github.ref == 'refs/heads/fix/prototype-stabilization'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/prototype-stabilization
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Resolve lockfile without running dependency scripts
+        run: |
+          test ! -e package-lock.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Commit only the generated lockfile to the working branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package-lock.json
+          git commit -m 'chore: generate npm lockfile on GitHub runner'
+          git push origin HEAD:fix/prototype-stabilization
+
+# Temporary first-party bootstrap. Remove before merging this PR.
