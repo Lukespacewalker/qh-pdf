@@ -65,7 +65,8 @@ describe('PdfWorkerBridge', () => {
     worker.emit({ type: 'success', jobId: firstJobId, payload: new Uint8Array([1]).buffer });
 
     const second = bridge.exportWorkspace(docs, workspace);
-    const secondRequest = worker.posted.findLast(message => (message as { type?: string }).type === 'export') as { jobId: string };
+    const exportMessages = worker.posted.filter(message => (message as { type?: string }).type === 'export') as { jobId: string }[];
+    const secondRequest = exportMessages.at(-1)!;
     worker.emit({ type: 'success', jobId: secondRequest.jobId, payload: new Uint8Array([2]).buffer });
     expect([...new Uint8Array(await (await second).arrayBuffer())]).toEqual([2]);
   });
