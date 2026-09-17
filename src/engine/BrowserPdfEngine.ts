@@ -1,10 +1,10 @@
-import { PDFDocument, degrees } from 'pdf-lib';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import type { PdfEngine, ImportedDocument } from './PdfEngine';
+import type { PdfEngine, ImportedDocument, ExportOptions } from './PdfEngine';
 import type { WorkspaceState } from '../domain/workspace';
 import { AppError } from '../errors/AppError';
 import { newId } from '../lib/ids';
+import { PdfWorkerBridge } from './workerBridge';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 const accepted = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
@@ -21,7 +21,34 @@ async function imageSize(bytes: ArrayBuffer, mime: string) {
   finally { bitmap.close(); }
 }
 
+async function convertWebpToPng(bytes: ArrayBuffer, mimeType: string): Promise<ArrayBuffer> {
+  const bitmap = await createImageBitmap(new Blob([bytes], { type: mimeType }));
+  const canvas = document.createElement('canvas');
+  try {
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Canvas unavailable');
+    context.drawImage(bitmap, 0, 0);
+    return await (await canvasBlob(canvas)).arrayBuffer();
+  } finally {
+    bitmap.close();
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+}
+
 export class BrowserPdfEngine implements PdfEngine {
+  private readonly exportBridge: PdfWorkerBridge | null;
+
+  constructor(exportBridge?: PdfWorkerBridge | null) {
+    this.exportBridge = exportBridge === undefined
+      ? (typeof Worker === 'undefined' ? null : new PdfWorkerBridge())
+      : exportBridge;
+  }
+
+  dispose(): void { this.exportBridge?.dispose(); }
+
   async importFile(file: File): Promise<ImportedDocument> {
     if (!accepted.has(file.type)) {
       throw new AppError('unsupported-file', 'This file type is not supported yet.');
@@ -34,8 +61,6 @@ export class BrowserPdfEngine implements PdfEngine {
         pages: [{ sourcePageIndex: 0, ...size }],
       };
     }
-    // PDF.js may transfer its input buffer. Keep original bytes for export.
-    // This app renders pages only, without the viewer scripting layer.
     const task = getDocument({ data: bytes.slice(0) });
     try {
       const pdf = await task.promise;
@@ -81,56 +106,25 @@ export class BrowserPdfEngine implements PdfEngine {
     }
   }
 
-  async exportWorkspace(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState): Promise<Blob> {
+  async exportWorkspace(
+    documents: ReadonlyMap<string, ImportedDocument>,
+    workspace: WorkspaceState,
+    options: ExportOptions = {},
+  ): Promise<Blob> {
+    if (this.exportBridge) return this.exportBridge.exportWorkspace(documents, workspace, options);
+
     try {
-      if (workspace.pages.length === 0) throw new Error('Cannot export an empty workspace');
-      const out = await PDFDocument.create();
-      const cache = new Map<string, PDFDocument>();
-      for (const wp of workspace.pages) {
-        const src = documents.get(wp.sourceDocumentId);
-        if (!src) throw new Error('An export source is missing');
-        if (src.kind === 'pdf') {
-          let pdf = cache.get(src.id);
-          if (!pdf) {
-            pdf = await PDFDocument.load(src.bytes.slice(0));
-            cache.set(src.id, pdf);
-          }
-          if (!Number.isInteger(wp.sourcePageIndex) || wp.sourcePageIndex < 0 || wp.sourcePageIndex >= pdf.getPageCount()) {
-            throw new Error('An export source page is invalid');
-          }
-          const [page] = await out.copyPages(pdf, [wp.sourcePageIndex]);
-          page.setRotation(degrees((page.getRotation().angle + wp.rotation) % 360));
-          out.addPage(page);
-        } else {
-          if (wp.sourcePageIndex !== 0 || !src.pages[0]) throw new Error('Invalid image page');
-          const info = src.pages[0];
-          const page = out.addPage([info.width, info.height]);
-          let embedded;
-          if (src.mimeType === 'image/jpeg') embedded = await out.embedJpg(src.bytes);
-          else if (src.mimeType === 'image/png') embedded = await out.embedPng(src.bytes);
-          else {
-            const bitmap = await createImageBitmap(new Blob([src.bytes], { type: src.mimeType }));
-            const canvas = document.createElement('canvas');
-            try {
-              canvas.width = bitmap.width;
-              canvas.height = bitmap.height;
-              const ctx = canvas.getContext('2d');
-              if (!ctx) throw new Error('Canvas unavailable');
-              ctx.drawImage(bitmap, 0, 0);
-              embedded = await out.embedPng(await (await canvasBlob(canvas)).arrayBuffer());
-            } finally {
-              bitmap.close();
-              canvas.width = 0;
-              canvas.height = 0;
-            }
-          }
-          page.drawImage(embedded, { x: 0, y: 0, width: info.width, height: info.height });
-          page.setRotation(degrees(wp.rotation));
-        }
-      }
-      const bytes = await out.save();
-      return new Blob([Uint8Array.from(bytes).buffer], { type: 'application/pdf' });
-    } catch {
+      const { exportPdfBytes } = await import('./exportPdf');
+      const payload = await exportPdfBytes(documents, workspace, {
+        convertWebpToPng,
+        isCancelled: () => options.signal?.aborted ?? false,
+        onProgress: options.onProgress,
+      });
+      if (options.signal?.aborted) throw new DOMException('Export cancelled', 'AbortError');
+      return new Blob([payload], { type: 'application/pdf' });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      if (error instanceof AppError) throw error;
       throw new AppError('export-failed', 'We couldn’t create the PDF. Your workspace is still here.');
     }
   }
