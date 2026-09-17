@@ -34,9 +34,9 @@ export class BrowserPdfEngine implements PdfEngine {
         pages: [{ sourcePageIndex: 0, ...size }],
       };
     }
-    // PDF.js may transfer its input buffer. Always give it a copy so exports
-    // and subsequent thumbnail requests retain the original document bytes.
-    const task = getDocument({ data: bytes.slice(0), isEvalSupported: false });
+    // PDF.js may transfer its input buffer. Keep original bytes for export.
+    // This app renders pages only, without the viewer scripting layer.
+    const task = getDocument({ data: bytes.slice(0) });
     try {
       const pdf = await task.promise;
       const pages = [];
@@ -62,7 +62,7 @@ export class BrowserPdfEngine implements PdfEngine {
     if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex >= doc.pages.length || !Number.isFinite(maxWidth) || maxWidth <= 0) {
       throw new Error('Invalid thumbnail request');
     }
-    const task = getDocument({ data: doc.bytes.slice(0), isEvalSupported: false });
+    const task = getDocument({ data: doc.bytes.slice(0) });
     const canvas = document.createElement('canvas');
     try {
       const pdf = await task.promise;
@@ -129,8 +129,6 @@ export class BrowserPdfEngine implements PdfEngine {
         }
       }
       const bytes = await out.save();
-      // Allocate a plain ArrayBuffer rather than asserting away the typed-array
-      // distinction between ArrayBuffer and SharedArrayBuffer in newer TS.
       return new Blob([Uint8Array.from(bytes).buffer], { type: 'application/pdf' });
     } catch {
       throw new AppError('export-failed', 'We couldn’t create the PDF. Your workspace is still here.');
