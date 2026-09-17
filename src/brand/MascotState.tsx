@@ -1,1 +1,11 @@
-type State='empty'|'working'|'warning'|'error'|'success';const src:Record<State,string>={empty:'/mascots/quack-empty-state.png',working:'/mascots/quack-working.png',warning:'/mascots/honk-worried-warning.webp',error:'/mascots/honk-error.png',success:'/mascots/honk-happy.webp'};export function MascotState({state,alt}:{state:State;alt:string}){return <img className="mascot" src={src[state]} alt={alt}/>}
+type State = 'empty' | 'working' | 'warning' | 'error' | 'success';
+const files: Record<State, string> = {
+  empty: 'quack-empty-state.webp',
+  working: 'quack-working.webp',
+  warning: 'honk-worried-warning.webp',
+  error: 'honk-error.webp',
+  success: 'honk-happy.webp',
+};
+export function MascotState({ state, alt }: { state: State; alt: string }) {
+  return <img className="mascot" src={`${import.meta.env.BASE_URL}mascots/${files[state]}`} alt={alt} />;
+}
