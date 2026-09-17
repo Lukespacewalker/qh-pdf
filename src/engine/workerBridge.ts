@@ -48,7 +48,11 @@ export class PdfWorkerBridge {
     if (options.signal?.aborted) return Promise.reject(abortError());
     const worker = this.ensureWorker();
     const jobId = newId();
-    const copies = [...documents.values()].map(document => ({ ...document, bytes: document.bytes.slice(0) }));
+    const sourceIds = new Set(workspace.pages.map(page => page.sourceDocumentId));
+    const copies = [...sourceIds]
+      .map(id => documents.get(id))
+      .filter((document): document is ImportedDocument => Boolean(document))
+      .map(document => ({ ...document, bytes: document.bytes.slice(0) }));
     const transfer = copies.map(document => document.bytes as Transferable);
 
     return new Promise<Blob>((resolve, reject) => {
