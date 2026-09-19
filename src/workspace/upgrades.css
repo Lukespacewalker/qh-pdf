@@ -38,3 +38,7 @@
   .selection-tools { align-items: flex-start; }
   .export-progress { padding: 14px; }
 }
+@media (max-width: 480px) {
+  .save-buttons { flex-direction: column; }
+  .save-buttons .btn { width: 100%; min-height: 48px; }
+}

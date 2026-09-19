@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 
 async function fixture() {
   const pdf = await PDFDocument.create();
-  for (const width of [201, 302, 403, 504]) {
+  for (const width of [420, 440, 460, 480]) {
     const page = pdf.addPage([width, 600]);
     page.drawText(`Synthetic page ${width}`, { x: 20, y: 500, size: 16 });
     page.drawRectangle({ x: 20, y: 200, width: width - 40, height: 100 });
@@ -44,15 +44,16 @@ test('selected encrypted output keeps page order and worker traffic remains same
   const metadata = await toolkit.getInfo(bytes, { password });
   expect(metadata.encrypted).toBe(true);
   expect(metadata.encryption).toMatchObject({ bits: 256, method: 'AESv3' });
-  const plain = await toolkit.unlock(bytes, { password });
-  const output = await PDFDocument.load(plain);
-  expect(output.getPages().map(page => page.getWidth())).toEqual([302, 504]);
+  const output = await PDFDocument.load(await toolkit.unlock(bytes, { password }));
+  expect(output.getPages().map(page => page.getWidth())).toEqual([440, 480]);
   await expect(page.locator('article.card')).toHaveCount(4);
-  await page.locator('article.card').first().scrollIntoViewIfNeeded();
+  await page.evaluate(() => scrollTo(0, 0));
   await expect(page.locator('article.card').first().locator('.preview img')).toBeVisible();
   await page.screenshot({ path: info.outputPath('desktop-workspace.png'), fullPage: true });
   await page.getByRole('button', { name: 'Preview page 1', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Page preview' }).locator('img')).toBeVisible();
+  const image = page.getByRole('dialog', { name: 'Page preview' }).locator('img');
+  await expect(image).toBeVisible();
+  await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.complete && node.naturalWidth > 0)).toBe(true);
   await page.screenshot({ path: info.outputPath('desktop-page-preview.png') });
   expect(paths.some(path => path.includes('PdfExport.worker'))).toBe(true);
   expect(paths.some(path => path.includes('PdfSecurity.worker'))).toBe(true);
@@ -66,14 +67,20 @@ test('mobile selection and preview are usable without dragging or a hardware key
   await page.getByRole('checkbox', { name: 'Include page 1 in selection', exact: true }).check();
   await page.getByRole('checkbox', { name: 'Include page 2 in selection', exact: true }).check();
   await expect(page.getByRole('button', { name: 'Save selected pages', exact: true })).toBeEnabled();
-  await page.locator('article.card').first().scrollIntoViewIfNeeded();
+  await page.evaluate(() => scrollTo(0, 0));
   await expect(page.locator('article.card').first().locator('.preview img')).toBeVisible();
   await page.screenshot({ path: info.outputPath('mobile-workspace.png'), fullPage: true });
   await page.getByRole('button', { name: 'Preview page 1', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Page preview' });
   await expect(dialog.locator('img')).toBeVisible();
+  const previous = await dialog.locator('img').getAttribute('src');
   await page.getByRole('button', { name: 'Next page', exact: true }).click();
   await expect(dialog.getByText('Page 2 of 4', { exact: true })).toBeVisible();
+  await expect.poll(async () => {
+    const images = dialog.locator('img');
+    if (await images.count() !== 1) return false;
+    return images.evaluate((node: HTMLImageElement, old) => node.complete && node.naturalWidth > 0 && node.src !== old, previous);
+  }).toBe(true);
   await page.screenshot({ path: info.outputPath('mobile-page-preview.png') });
   expect(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   await page.getByRole('button', { name: 'Close preview', exact: true }).click();
