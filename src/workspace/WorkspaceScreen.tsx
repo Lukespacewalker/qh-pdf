@@ -82,7 +82,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
           onDragLeave={() => setDrag(false)}
           onDrop={event => { event.preventDefault(); setDrag(false); void add(Array.from(event.dataTransfer.files)); }}>
           <MascotState state={store.busy ? 'working' : 'empty'} alt={store.busy ? 'Quack working' : 'Quack welcoming you to the workspace'} />
-          <h1>Your files. Your kind of PDF.</h1>
+          <h1>Combine files. Arrange pages.</h1>
           <p className="drop-intro">Combine documents, rearrange pages, or turn pictures into a PDF.<br className="desktop-break" /> Drop your files here to get started.</p>
           {error}
           <button className="btn primary file-btn" aria-describedby="supported-formats" onClick={() => input.current?.click()} disabled={editLocked}>
@@ -110,6 +110,12 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
         </div>
         <p className="arrange-hint">Drag the handle on a page or use its arrows to change the order. Undo is always handy.</p>
         <DndContext sensors={sensors} collisionDetection={args => args.pointerCoordinates ? pointerWithin(args) : closestCenter(args)}
+          accessibility={{ announcements: {
+            onDragStart: ({ active }) => `Picked up page ${ws.pages.findIndex(page => page.id === active.id) + 1}.`,
+            onDragOver: ({ over }) => over ? `Move to position ${ws.pages.findIndex(page => page.id === over.id) + 1}.` : 'Outside the page area. Drop to cancel.',
+            onDragEnd: ({ over }) => over ? `Page moved to position ${ws.pages.findIndex(page => page.id === over.id) + 1}.` : 'Page move cancelled.',
+            onDragCancel: () => 'Page move cancelled.',
+          } }}
           onDragStart={event => setActivePage(String(event.active.id))}
           onDragCancel={() => setActivePage(null)}
           onDragEnd={({ active, over }) => {

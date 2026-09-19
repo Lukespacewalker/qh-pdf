@@ -112,7 +112,7 @@ export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }
           setError(''); setEnabled(true);
         }} />Remember work on this device</label>
       <p>Optional. Saves source files and page edits in this browser until cleared. Anyone using this browser can restore unprotected files. Protected PDFs ask for their opening password again; passwords and unlocked copies are never saved.</p>
-      <div className="recovery-actions"><span role="status" data-testid="recovery-status">{status}</span>
+      <div className="recovery-actions"><span role="status" data-testid="recovery-status">{enabled && pages !== lastSavedPages.current ? 'Saving on this device…' : status}</span>
         {revision.current && <button className="text-btn" disabled={locked || clearing} onClick={() => void clear()}>Clear saved work</button>}
       </div>
     </>}

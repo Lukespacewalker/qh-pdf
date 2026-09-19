@@ -25,6 +25,7 @@ test('drag handles and arrows change export order and dragging can be undone', a
   await page.mouse.down();
   await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 20 });
   await page.mouse.up();
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);
   expect(await exportWidths(page)).toEqual([222, 333, 111]);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   expect(await exportWidths(page)).toEqual([111, 222, 333]);
@@ -78,4 +79,73 @@ test('a storage failure remains visible and does not prevent exporting the open 
   await page.getByLabel('Remember work on this device').check();
   await expect(page.getByRole('alert')).toContainText('could not save');
   expect(await exportWidths(page)).toEqual([111, 222, 333]);
+});
+
+test('keyboard reordering supports drop and cancellation', async ({ page }) => {
+  await page.goto('/');
+  await importPages(page);
+  await page.getByRole('button', { name: 'Drag page 1 to reorder' }).focus();
+  // A held key allows the sensor's deferred key listener to attach before the next key.
+  await page.keyboard.press('Space', { delay: 60 });
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Space', { delay: 60 });
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);
+  expect(await exportWidths(page)).toEqual([222, 111, 333]);
+  await page.getByRole('button', { name: 'Drag page 1 to reorder' }).focus();
+  await page.keyboard.press('Space', { delay: 60 });
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.drag-overlay')).toHaveCount(0);
+  expect(await exportWidths(page)).toEqual([222, 111, 333]);
+});
+
+test('turning recovery off immediately cannot leave a queued snapshot behind', async ({ page }) => {
+  await page.goto('/');
+  await importPages(page);
+  await page.getByLabel('Remember work on this device').check();
+  await page.getByLabel('Remember work on this device').uncheck();
+  await expect(page.getByTestId('recovery-status')).toHaveText('Saved copy cleared. Recovery is off.');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Choose files' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Restore saved work' })).toHaveCount(0);
+});
+
+test('failed clearing never claims that the saved copy was removed', async ({ page }) => {
+  await page.goto('/');
+  await importPages(page);
+  await page.getByLabel('Remember work on this device').check();
+  await expect(page.getByTestId('recovery-status')).toHaveText('Saved on this device');
+  await page.evaluate(() => {
+    IDBObjectStore.prototype.delete = function () { throw new DOMException('Synthetic delete failure', 'UnknownError'); };
+  });
+  await page.getByRole('button', { name: 'Clear saved work' }).click();
+  await expect(page.getByRole('alert')).toContainText('could not clear');
+  await expect(page.getByTestId('recovery-status')).not.toContainText('cleared');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Restore saved work' })).toBeVisible();
+});
+
+test('touch drag handles rearrange pages at a mobile viewport', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const page = await context.newPage();
+  try {
+    await page.goto('/');
+    await importPages(page);
+    const first = await page.getByRole('button', { name: 'Drag page 1 to reorder' }).boundingBox();
+    const second = await page.getByRole('button', { name: 'Drag page 2 to reorder' }).boundingBox();
+    if (!first || !second) throw new Error('Missing touch target');
+    const session = await context.newCDPSession(page);
+    const start = { x: first.x + first.width / 2, y: first.y + first.height / 2 };
+    const end = { x: second.x + second.width / 2, y: second.y + second.height / 2 };
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
+    for (let i = 1; i <= 10; i++) {
+      await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x + (end.x - start.x) * i / 10, y: start.y }] });
+    }
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(page.locator('.drag-overlay')).toHaveCount(0);
+    // dnd-kit's pointer sensor suppresses native clicks for 50ms after dropping.
+    await page.waitForTimeout(60);
+    expect(await exportWidths(page)).toEqual([222, 111, 333]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  } finally { await context.close(); }
 });

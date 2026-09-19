@@ -21,8 +21,10 @@
 .capability-symbol { display: inline-grid; place-items: center; width: 34px; height: 34px; background: var(--muted); border-radius: 10px; font-size: 25px; color: var(--primary); }
 .capability h3 { margin: 14px 0 8px; font-size: 16px; line-height: 1.35; }
 .capability p { color: var(--secondary); font-size: 14px; line-height: 1.6; margin: 0; }
+.security-note { color: var(--secondary); font-size: 13px; line-height: 1.6; margin: 18px 0 0; }
 .arrange-hint { font-size: 14px; color: var(--secondary); line-height: 1.5; }
-.drag-handle { border: 0; background: transparent; color: var(--secondary); display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; min-height: 36px; padding: 4px 8px 10px; font-size: 12px; font-weight: 650; cursor: grab; touch-action: none; }
+.drag-handle { border: 0; background: transparent; color: var(--secondary); display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; min-height: 44px; padding: 4px 8px 10px; font-size: 12px; font-weight: 650; cursor: grab; touch-action: none; }
+.mini .btn { min-height: 44px; }
 .drag-handle span { font-size: 22px; }
 .drag-handle:active { cursor: grabbing; }
 .drag-handle:disabled { cursor: default; opacity: .4; }
