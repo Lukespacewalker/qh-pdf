@@ -13,6 +13,7 @@ test('serves the workspace with browser security headers', async ({ page }) => {
   const response = await page.goto('/');
   expect(response?.status()).toBe(200);
   const headers = response!.headers();
+  expect(headers['cache-control']).toContain('no-transform');
   expect(headers['content-security-policy']).toContain("script-src 'self' 'wasm-unsafe-eval'");
   expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
   expect(headers['content-security-policy']).toContain("connect-src 'self' blob:");
