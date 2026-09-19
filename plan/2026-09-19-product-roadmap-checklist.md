@@ -4,20 +4,22 @@ This is the current execution checklist, not a completion claim. A box is checke
 
 ## P0 — Large-document reliability
 
-- [ ] Replace `Private · Browser-based` with the narrower mechanism statement `Runs in your browser`.
-- [ ] Add reproducible synthetic fixtures for 10, 50, 100, 300, and 500 pages.
-- [ ] Measure import time, first thumbnail, thumbnail throughput, export time, approximate peak JS heap, UI responsiveness, and cancellation.
-- [ ] Move `pdf-lib` assembly and image embedding into a dedicated module worker.
-- [ ] Transfer copies of referenced source buffers without detaching originals.
-- [ ] Preserve additive rotations, duplicates, mixed-source ordering, and fail-closed export validation.
-- [ ] Show page-based export progress.
-- [ ] Cancel assembly and optional password encryption without losing the workspace or creating a download.
-- [ ] Bound thumbnail work to two concurrent jobs.
-- [ ] Prioritize visible/near-visible thumbnails and cancel stale queued work.
-- [ ] Add browser-native rendering containment for off-screen cards.
-- [ ] Decide whether true DOM windowing is needed from benchmark evidence; do not adopt it if it breaks stable dnd-kit reorder targets.
+- [x] Replace `Private · Browser-based` with the narrower mechanism statement `Runs in your browser`.
+- [x] Add reproducible synthetic fixtures for 10, 50, 100, 300, and 500 pages.
+- [x] Measure import time, first thumbnail, thumbnail throughput, export time, approximate peak JS heap, UI responsiveness, and cancellation.
+- [x] Move `pdf-lib` assembly and image embedding into a dedicated module worker.
+- [x] Transfer copies of referenced source buffers without detaching originals.
+- [x] Preserve additive rotations, duplicates, mixed-source ordering, and fail-closed export validation.
+- [x] Show page-based export progress.
+- [x] Cancel assembly and optional password encryption without losing the workspace or creating a download.
+- [x] Bound thumbnail work to two concurrent jobs.
+- [x] Prioritize visible/near-visible thumbnails and cancel stale queued work.
+- [x] Add browser-native rendering containment for off-screen cards.
+- [x] Decide whether true DOM windowing is needed from benchmark evidence; retain stable DOM reorder targets for now and revisit windowing only if real-document profiling shows DOM/layout is the bottleneck.
 - [ ] Verify the final revision with Node 24 unit, build, Chromium browser, and local Cloudflare hosting suites.
-- [ ] Record which benchmark sizes completed and the actual browser/fixture coverage.
+- [x] Record which benchmark sizes completed and the actual browser/fixture coverage.
+
+Evidence on the revision containing this checklist: `volta run --node 24 npm run bench:large-documents` completed five synthetic blank-page Chromium cases (10/50/100/300/500) on 2026-09-19. At 500 pages the recorded sample was 253 ms import, 295 ms to first thumbnail, 25.7 thumbnails/s while scrolling, 282 ms export, 33.4 ms maximum sampled frame gap, and 290 ms cancellation. These are local regression measurements, not public performance claims. The final unit/build/browser/hosting gate remains unchecked until it is rerun after documentation is committed.
 
 ## P1 — Full-page preview
 

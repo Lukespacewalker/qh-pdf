@@ -23,6 +23,14 @@ npm run test:browser
 
 Playwright starts `vite preview` on `127.0.0.1:4173` and stops it after the tests. On a new Linux machine, use `npx playwright install --with-deps chromium` if browser system dependencies are missing.
 
+For an opt-in synthetic large-document benchmark:
+
+```bash
+npm run bench:large-documents
+```
+
+It exercises 10, 50, 100, 300 and 500 blank pages by default. Set `QH_PDF_BENCH_PAGES` to a comma-separated subset for a smoke run. Results are written beneath the ignored `test-results/` directory. The timings and approximate Chromium JS heap sample describe the test machine and fixture only; they are not product speed or capacity guarantees.
+
 ## Current prototype
 
 - Import PDF, JPEG, PNG and WebP through the file picker. The empty workspace also accepts file drops.
@@ -31,6 +39,7 @@ Playwright starts `vite preview` on `127.0.0.1:4173` and stops it after the test
 - Reorder with a visible drag handle using a mouse, touch, or keyboard; arrow buttons remain available.
 - Recover after deleting the last page using the empty-state Undo control.
 - Combine pages from multiple PDFs and pictures into one download.
+- Create the output in a dedicated browser worker with page-based progress and cancellation.
 - Preserve source PDF page rotation and add the requested workspace rotation.
 - Reject empty or incomplete exports instead of silently dropping pages.
 - Open password-protected PDFs with the supplied password and optionally require a new password on exported PDFs (AES-256).
@@ -70,7 +79,7 @@ Static asset requests and storage are free under [Cloudflare's current pricing](
 
 The `Verify` GitHub Actions workflow runs `npm ci`, Vitest domain/export/security tests, a TypeScript/Vite production build, and Chromium workflows against both Vite preview and the local Cloudflare runtime. The hosting suite also checks HTTP security headers. The workflow has read-only repository permissions and does not deploy the app.
 
-The export tests create and reopen real PDFs. The browser tests use the production build to exercise real PDF.js previews, page editing, downloads, PDF/image mixing, malformed-input recovery, mascot decoding, and a 390-pixel-wide viewport. Additional tests cover mouse/keyboard/touch reordering, password retries/cancellation, Unicode AES-256 export, encrypted-original persistence, reload recovery, cross-tab conflicts, and failed saving/clearing. PDF fixtures are synthetic, not user documents. Touch coverage is Chromium emulation, not a physical-device or Safari certification.
+The export tests create and reopen real PDFs. The browser tests use the production build to exercise real PDF.js previews, page editing, downloads, PDF/image mixing, malformed-input recovery, mascot decoding, cancellable export progress, viewport-gated thumbnails for a 100-page document, and a 390-pixel-wide viewport. Additional tests cover mouse/keyboard/touch reordering, password retries/cancellation, Unicode AES-256 export, encrypted-original persistence, reload recovery, cross-tab conflicts, and failed saving/clearing. PDF fixtures are synthetic, not user documents. Touch coverage is Chromium emulation, not a physical-device or Safari certification.
 
 A request guard checks that the mixed PDF/PNG/JPEG/WebP workflow sends only same-origin, static GET requests without query strings or request bodies. This is evidence for that tested flow, not a complete security audit or a guarantee about every possible document or browser.
 
@@ -84,8 +93,9 @@ Password processing uses pinned `pdfstudio` 0.4.0 with QPDF 12.3.2, native QPDF 
 
 This is still a prototype:
 
-- PDF assembly via pdf-lib is not yet moved into a dedicated worker. Large files may block the interface or exceed browser memory limits. QPDF password operations are worker-isolated, but that does not impose a browser memory ceiling or guarantee secure memory zeroization.
-- Thumbnails are not virtualized or managed by a bounded scheduling queue yet. Source bytes remain retained for undo/redo during the session.
+- PDF assembly and image embedding use a fresh module worker for each export. Only referenced sources are sent, as transferable copies, so the original buffers remain available for retry, undo and recovery. Progress and cancellation cover assembly; optional password encryption remains isolated in its own cancellable QPDF worker. Copies and retained source buffers mean peak memory is still browser- and device-dependent, and worker isolation does not impose a memory ceiling or guarantee secure memory zeroization.
+- Thumbnails use a two-job priority scheduler, a 600-pixel viewport margin and browser `content-visibility` containment. Off-screen cards remain in the DOM so drag, keyboard and arrow reorder targets stay stable; this is not true DOM windowing. Import parsing and page-metadata enumeration still run through PDF.js from the UI-side engine and require further measurement for complex documents.
+- The synthetic Chromium benchmark completes 10, 50, 100, 300 and 500 blank-page fixtures and checks cancellation at the largest requested size. That evidence is a regression baseline, not a guarantee that arbitrary 500-page files will fit memory or perform similarly.
 - OCR, Office conversion and full PDF text editing are not supported. Password support covers standard PDF passwords, not certificate-based or third-party DRM security handlers.
 - The bundled QPDF version trails upstream releases. Worker timeouts limit parser hangs; hostile-document memory exhaustion remains a limitation. Further parser hardening and dependency upgrades require ongoing review.
 - Editing creates a new PDF. Preservation of interactive forms, signatures, document-level bookmarks, accessibility tags and attachments is not guaranteed.
