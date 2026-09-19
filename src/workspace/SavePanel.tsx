@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
-export function SavePanel({ count, locked, exporting, onSave }: {
-  count: number; locked: boolean; exporting: boolean; onSave: (password?: string) => Promise<boolean>;
+export function SavePanel({ count, locked, exporting, onSave, onCancel }: {
+  count: number; locked: boolean; exporting: boolean; onSave: (password?: string) => Promise<boolean>; onCancel: () => void;
 }) {
   const [protect, setProtect] = useState(false);
   const [password, setPassword] = useState('');
@@ -18,7 +18,9 @@ export function SavePanel({ count, locked, exporting, onSave }: {
   return <section className="save-panel" aria-labelledby="save-title">
     <div className="save-summary"><div><h2 id="save-title">Ready to save?</h2>
       <p>Download all {count} {count === 1 ? 'page' : 'pages'} in the order shown.</p></div>
-      <button className="btn primary" disabled={locked} onClick={() => void submit()}>{exporting ? 'Creating PDF…' : 'Save PDF'}</button>
+      {exporting
+        ? <button className="btn danger" onClick={onCancel}>Cancel export</button>
+        : <button className="btn primary" disabled={locked} onClick={() => void submit()}>Save PDF</button>}
     </div>
     <label className="check-label"><input type="checkbox" checked={protect} disabled={locked}
       onChange={event => { setProtect(event.target.checked); setPassword(''); setConfirm(''); setError(''); }} />Require a password to open the saved PDF</label>

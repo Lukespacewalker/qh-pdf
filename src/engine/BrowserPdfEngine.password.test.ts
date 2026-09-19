@@ -15,6 +15,10 @@ vi.mock('pdfjs-dist/build/pdf.worker.min.mjs?url', () => ({
 vi.mock('pdfstudio/qpdf.wasm?url', () => ({
   default: new URL('../../node_modules/pdfstudio/dist/wasm/qpdf.wasm', import.meta.url).href,
 }));
+vi.mock('./PdfExport', async () => {
+  const { runPdfExportInProcess } = await import('./test/runPdfExportInProcess');
+  return { runPdfExport: runPdfExportInProcess };
+});
 import { BrowserPdfEngine } from './BrowserPdfEngine';
 
 let toolkit: PdfToolkit;
@@ -121,4 +125,3 @@ describe('real password-protected PDFs', () => {
       .rejects.toMatchObject({ code: 'invalid-pdf' });
   });
 });
-

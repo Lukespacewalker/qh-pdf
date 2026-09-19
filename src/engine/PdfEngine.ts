@@ -14,8 +14,17 @@ export interface ImportedDocument {
   pages: ImportedPageDescriptor[];
 }
 export interface PdfPasswordOptions { password?: string }
+export interface ExportProgress {
+  phase: 'assembling' | 'protecting';
+  completed: number;
+  total: number;
+}
+export interface PdfExportOptions extends PdfPasswordOptions {
+  signal?: AbortSignal;
+  onProgress?: (progress: ExportProgress) => void;
+}
 export interface PdfEngine {
   importFile(file: File, options?: PdfPasswordOptions): Promise<ImportedDocument>;
   renderThumbnail(doc: ImportedDocument, pageIndex: number, maxWidth: number): Promise<Blob>;
-  exportWorkspace(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, options?: PdfPasswordOptions): Promise<Blob>;
+  exportWorkspace(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, options?: PdfExportOptions): Promise<Blob>;
 }

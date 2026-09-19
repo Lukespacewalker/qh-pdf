@@ -1,39 +1,68 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { ImportedDocument, PdfEngine } from '../engine/PdfEngine';
+import type { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
 import type { WorkspacePage } from '../domain/workspace';
 import { useWorkspaceStore } from './useWorkspaceStore';
 
-export function PageCard({ page, index, doc, engine, disabled, last }: {
-  page: WorkspacePage; index: number; doc: ImportedDocument; engine: PdfEngine; disabled: boolean; last: boolean;
+export function PageCard({ page, index, doc, engine, scheduler, disabled, last }: {
+  page: WorkspacePage; index: number; doc: ImportedDocument; engine: PdfEngine; scheduler: ThumbnailScheduler; disabled: boolean; last: boolean;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: page.id, disabled });
   const [thumb, setThumb] = useState('');
   const [previewFailed, setPreviewFailed] = useState(false);
+  const [cardNode, setCardNode] = useState<HTMLElement | null>(null);
+  const [thumbnailPriority, setThumbnailPriority] = useState<number | null>(null);
   const selected = useWorkspaceStore(s => s.history.present.selectedPageIds.includes(page.id));
   const select = useWorkspaceStore(s => s.select);
   const move = useWorkspaceStore(s => s.move);
+  const setCardRef = useCallback((node: HTMLElement | null) => {
+    setNodeRef(node);
+    setCardNode(node);
+  }, [setNodeRef]);
+
   useEffect(() => {
-    let url = '';
-    let disposed = false;
+    if (!cardNode) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setThumbnailPriority(100);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) {
+        setThumbnailPriority(null);
+        return;
+      }
+      const visible = entry.boundingClientRect.bottom >= 0 && entry.boundingClientRect.top <= window.innerHeight;
+      setThumbnailPriority(visible ? 100 : 10);
+    }, { rootMargin: '600px 0px' });
+    observer.observe(cardNode);
+    return () => observer.disconnect();
+  }, [cardNode]);
+
+  useEffect(() => {
     setThumb('');
     setPreviewFailed(false);
-    engine.renderThumbnail(doc, page.sourcePageIndex, 260).then(blob => {
+    if (thumbnailPriority === null) return;
+    let url = '';
+    let disposed = false;
+    const job = scheduler.schedule(() => engine.renderThumbnail(doc, page.sourcePageIndex, 260), thumbnailPriority);
+    job.promise.then(blob => {
       if (disposed) return;
       url = URL.createObjectURL(blob);
       setThumb(url);
-    }).catch(() => {
-      if (!disposed) setPreviewFailed(true);
+    }).catch(error => {
+      if (!disposed && (!(error instanceof DOMException) || error.name !== 'AbortError')) setPreviewFailed(true);
     });
     return () => {
       disposed = true;
+      job.cancel();
       if (url) URL.revokeObjectURL(url);
     };
-  }, [doc, engine, page.sourcePageIndex]);
+  }, [doc, engine, page.sourcePageIndex, scheduler, thumbnailPriority]);
 
-  return <article ref={setNodeRef} className={`card ${selected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+  return <article ref={setCardRef} className={`card ${selected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
     style={{ transform: CSS.Transform.toString(transform), transition }} aria-label={`Page ${index + 1} from ${doc.fileName}`}>
     <button ref={setActivatorNodeRef} className="drag-handle" {...attributes} {...listeners}
       aria-label={`Drag page ${index + 1} to reorder`} disabled={disabled}><span aria-hidden="true">⠿</span> Drag</button>

@@ -4,7 +4,10 @@ export interface SecurityRequest { operation: 'lock' | 'unlock'; bytes: ArrayBuf
 export type SecurityResponse = { ok: true; bytes: ArrayBuffer } |
   { ok: false; code: AppErrorCode; message: string };
 
-function runJob(request: SecurityRequest): Promise<ArrayBuffer> {
+const cancelled = () => new DOMException('Export cancelled', 'AbortError');
+
+function runJob(request: SecurityRequest, signal?: AbortSignal): Promise<ArrayBuffer> {
+  if (signal?.aborted) return Promise.reject(cancelled());
   return new Promise((resolve, reject) => {
     const failureCode = request.operation === 'lock' ? 'export-failed' : 'import-failed';
     let worker: Worker;
@@ -14,19 +17,35 @@ function runJob(request: SecurityRequest): Promise<ArrayBuffer> {
       reject(new AppError(failureCode, 'The PDF password tool could not start. Please try again.'));
       return;
     }
-    const finish = () => { clearTimeout(timeout); worker.terminate(); };
-    const timeout = setTimeout(() => {
-      finish();
-      reject(new AppError(failureCode, 'The PDF password operation timed out. Your workspace is still here.'));
-    }, 60_000);
-    worker.onmessage = ({ data }: MessageEvent<SecurityResponse>) => {
-      finish();
-      if (data.ok) resolve(data.bytes);
-      else reject(new AppError(data.code, data.message));
+    let settled = false;
+    const finish = (complete: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      signal?.removeEventListener('abort', abort);
+      worker.terminate();
+      complete();
     };
+    const abort = () => finish(() => reject(cancelled()));
+    const timeout = setTimeout(() => {
+      finish(() => reject(new AppError(failureCode, 'The PDF password operation timed out. Your workspace is still here.')));
+    }, 60_000);
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) {
+      abort();
+      return;
+    }
     const failed = () => {
-      finish();
-      reject(new AppError(failureCode, 'The PDF password operation failed. Your workspace is still here.'));
+      finish(() => reject(new AppError(failureCode, 'The PDF password operation failed. Your workspace is still here.')));
+    };
+    worker.onmessage = ({ data }: MessageEvent<SecurityResponse | null>) => {
+      if (data?.ok === true && data.bytes instanceof ArrayBuffer) {
+        finish(() => resolve(data.bytes));
+      } else if (data?.ok === false && typeof data.code === 'string' && typeof data.message === 'string') {
+        finish(() => reject(new AppError(data.code, data.message)));
+      } else {
+        failed();
+      }
     };
     worker.onerror = event => { event.preventDefault(); failed(); };
     worker.onmessageerror = failed;
@@ -41,6 +60,6 @@ export function unlockPdf(bytes: ArrayBuffer, password = ''): Promise<ArrayBuffe
   return runJob({ operation: 'unlock', bytes: bytes.slice(0), password });
 }
 
-export async function lockPdf(bytes: Uint8Array, password: string): Promise<Uint8Array<ArrayBuffer>> {
-  return new Uint8Array(await runJob({ operation: 'lock', bytes: Uint8Array.from(bytes).buffer, password }));
+export async function lockPdf(bytes: Uint8Array, password: string, signal?: AbortSignal): Promise<Uint8Array<ArrayBuffer>> {
+  return new Uint8Array(await runJob({ operation: 'lock', bytes: Uint8Array.from(bytes).buffer, password }, signal));
 }

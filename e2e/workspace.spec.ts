@@ -31,6 +31,13 @@ async function expectThumbnails(page: Page, count: number) {
 
 test('all six locally served mascot files decode and the empty state uses a real image', async ({ page }) => {
   await page.goto('/');
+  const brandLink = page.getByRole('link', { name: 'Visit Quack & Honk (opens in a new tab)', exact: true });
+  await expect(brandLink).toBeVisible();
+  await expect(brandLink).toHaveAttribute('href', 'https://quackandhonk.com');
+  await expect(brandLink).toHaveAttribute('target', '_blank');
+  await expect(brandLink).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(page.getByText('Runs in your browser', { exact: true })).toBeVisible();
+  await expect(page.getByText('Private · Browser-based', { exact: true })).toHaveCount(0);
   await expect.poll(() => page.locator('.mascot').evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
   const names = ['honk-happy', 'honk-error', 'honk-worried-warning', 'quack-hello', 'quack-working', 'quack-empty-state'];
   for (const name of names) {
@@ -68,6 +75,53 @@ test('real PDF previews and edited export preserve order, duplicate pages and so
   expect(output.getPages().map(p => p.getRotation().angle)).toEqual([180, 180, 0, 90]);
   await expect(page.getByText('Your PDF is ready.', { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test('long export reports progress and can be cancelled without losing the workspace', async ({ page }) => {
+  const pageCount = 30;
+  let downloads = 0;
+  page.on('download', () => { downloads += 1; });
+  await page.route(/\/assets\/PdfExport\.worker-.*\.js$/, async route => {
+    await new Promise(resolve => setTimeout(resolve, 1_000));
+    await route.continue();
+  });
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile(
+    'large-synthetic.pdf',
+    Array.from({ length: pageCount }, (_, index) => 200 + (index % 100)),
+  ));
+  await expect(page.locator('article')).toHaveCount(pageCount);
+
+  await page.getByRole('button', { name: 'Save PDF', exact: true }).click();
+  await expect(page.getByRole('progressbar', { name: 'Creating PDF' })).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel export' }).click();
+
+  await expect(page.getByText('Export cancelled. Your workspace is still here.', { exact: true })).toBeVisible();
+  await expect(page.locator('article')).toHaveCount(pageCount);
+  await expect(page.getByRole('button', { name: 'Save PDF', exact: true })).toBeEnabled();
+  await page.waitForTimeout(500);
+  expect(downloads).toBe(0);
+});
+
+test('large page grids defer off-screen thumbnails while keeping every page editable', async ({ page }) => {
+  const pageCount = 100;
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile(
+    'many-pages.pdf',
+    Array.from({ length: pageCount }, (_, index) => 200 + index),
+  ));
+  await expect(page.locator('article')).toHaveCount(pageCount);
+  await expect(page.locator('article .preview img').first()).toBeVisible();
+  await page.waitForTimeout(500);
+  expect(await page.locator('article .preview img').count()).toBeLessThan(50);
+
+  const lastCard = page.locator('article').last();
+  await lastCard.scrollIntoViewIfNeeded();
+  await expect(lastCard.locator('.preview img')).toBeVisible();
+  await page.getByRole('button', { name: 'Select page 100 from many-pages.pdf', exact: true }).click();
+  await expect(page.locator('article.selected')).toHaveAttribute('aria-label', 'Page 100 from many-pages.pdf');
+  await page.getByRole('button', { name: 'Move page 100 left', exact: true }).click();
+  await expect(page.locator('article.selected')).toHaveAttribute('aria-label', 'Page 99 from many-pages.pdf');
 });
 
 test('mixes PNG, JPEG, WebP and PDF without non-static network requests', async ({ page, baseURL }) => {
@@ -131,6 +185,7 @@ test('reports invalid input and allows recovery', async ({ page }) => {
 test('mobile viewport has no horizontal overflow and supports non-drag editing', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Visit Quack & Honk (opens in a new tab)', exact: true })).toBeInViewport();
   await expect(page.getByRole('button', { name: 'Choose files', exact: true })).toBeInViewport();
   await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
