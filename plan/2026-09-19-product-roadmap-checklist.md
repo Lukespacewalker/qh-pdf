@@ -16,10 +16,10 @@ This is the current execution checklist, not a completion claim. A box is checke
 - [x] Prioritize visible/near-visible thumbnails and cancel stale queued work.
 - [x] Add browser-native rendering containment for off-screen cards.
 - [x] Decide whether true DOM windowing is needed from benchmark evidence; retain stable DOM reorder targets for now and revisit windowing only if real-document profiling shows DOM/layout is the bottleneck.
-- [ ] Verify the final revision with Node 24 unit, build, Chromium browser, and local Cloudflare hosting suites.
+- [x] Verify the final revision with Node 24 unit, build, Chromium browser, and local Cloudflare hosting suites.
 - [x] Record which benchmark sizes completed and the actual browser/fixture coverage.
 
-Evidence on the revision containing this checklist: `volta run --node 24 npm run bench:large-documents` completed five synthetic blank-page Chromium cases (10/50/100/300/500) on 2026-09-19. At 500 pages the recorded sample was 253 ms import, 295 ms to first thumbnail, 25.7 thumbnails/s while scrolling, 282 ms export, 33.4 ms maximum sampled frame gap, and 290 ms cancellation. These are local regression measurements, not public performance claims. The final unit/build/browser/hosting gate remains unchecked until it is rerun after documentation is committed.
+Evidence on the revision containing this checklist: `volta run --node 24 npm run bench:large-documents` completed five synthetic blank-page Chromium cases (10/50/100/300/500) on 2026-09-19. At 500 pages the recorded sample was 253 ms import, 295 ms to first thumbnail, 25.7 thumbnails/s while scrolling, 282 ms export, 33.4 ms maximum sampled frame gap, and 290 ms cancellation. These are local regression measurements, not public performance claims. After the documentation commit, Node 24 ran 43 Vitest tests, 20 production-build Chromium workflows, and 21 local Cloudflare/Chromium workflows successfully; the build still reports its existing large-chunk warning.
 
 ## P1 — Full-page preview
 
