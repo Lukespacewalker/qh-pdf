@@ -88,14 +88,12 @@ async function installSampler(page: import('@playwright/test').Page) {
 
 async function renderEveryThumbnail(page: import('@playwright/test').Page, pageCount: number) {
   const cards = page.locator('article');
-  for (let index = 0; index < pageCount; index += 6) {
+  for (let index = 0; index < pageCount; index += 1) {
     await cards.nth(index).scrollIntoViewIfNeeded();
-    await page.waitForTimeout(20);
+    await page.waitForFunction(label => {
+      return (window as BenchmarkWindow).__qhBenchmark?.thumbnailPages.has(label);
+    }, `Page ${index + 1} from synthetic-large-document.pdf`);
   }
-  await cards.nth(pageCount - 1).scrollIntoViewIfNeeded();
-  await page.waitForFunction(expected => {
-    return ((window as BenchmarkWindow).__qhBenchmark?.thumbnailPages.size ?? 0) === expected;
-  }, pageCount, { timeout: 15 * 60 * 1000 });
 }
 
 test.describe.configure({ mode: 'serial' });
