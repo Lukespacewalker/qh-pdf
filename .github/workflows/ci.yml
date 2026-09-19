@@ -32,5 +32,15 @@ jobs:
         run: npx playwright install --with-deps chromium
       - run: npm run test:browser
       - run: npm run test:hosting
+      - name: Measure synthetic documents
+        run: npx playwright test --config playwright.performance.config.ts
       - name: Confirm verification did not modify tracked files
         run: git diff --exit-code
+      - name: Retain synthetic browser evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: synthetic-browser-evidence
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore
