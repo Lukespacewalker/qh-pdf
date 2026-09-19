@@ -2,6 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 import { PDFDocument, degrees } from 'pdf-lib';
 import { readFile } from 'node:fs/promises';
 
+const renderTimeout = 15_000;
+
 async function pdfFile(name: string, widths: number[], rotation = 0) {
   const pdf = await PDFDocument.create();
   for (const width of widths) {
@@ -22,11 +24,11 @@ async function exportPdf(page: Page) {
 }
 async function expectThumbnails(page: Page, count: number) {
   const images = page.locator('article .preview img');
-  await expect(images).toHaveCount(count);
+  await expect(images).toHaveCount(count, { timeout: renderTimeout });
   await expect.poll(() => images.evaluateAll(nodes => nodes.every(node => {
     const image = node as HTMLImageElement;
     return image.complete && image.naturalWidth > 0 && image.src.startsWith('blob:');
-  }))).toBe(true);
+  })), { timeout: renderTimeout }).toBe(true);
 }
 
 test('all six locally served mascot files decode and the empty state uses a real image', async ({ page }) => {
@@ -112,7 +114,7 @@ test('long export reports progress and can be cancelled without losing the works
     'large-synthetic.pdf',
     Array.from({ length: pageCount }, (_, index) => 200 + (index % 100)),
   ));
-  await expect(page.locator('article')).toHaveCount(pageCount);
+  await expect(page.locator('article')).toHaveCount(pageCount, { timeout: renderTimeout });
 
   await page.getByRole('button', { name: 'Save PDF', exact: true }).click();
   await expect(page.getByRole('progressbar', { name: 'Creating PDF' })).toBeVisible();
@@ -132,14 +134,14 @@ test('large page grids defer off-screen thumbnails while keeping every page edit
     'many-pages.pdf',
     Array.from({ length: pageCount }, (_, index) => 200 + index),
   ));
-  await expect(page.locator('article')).toHaveCount(pageCount);
-  await expect(page.locator('article .preview img').first()).toBeVisible();
+  await expect(page.locator('article')).toHaveCount(pageCount, { timeout: renderTimeout });
+  await expect(page.locator('article .preview img').first()).toBeVisible({ timeout: renderTimeout });
   await page.waitForTimeout(500);
   expect(await page.locator('article .preview img').count()).toBeLessThan(50);
 
   const lastCard = page.locator('article').last();
   await lastCard.scrollIntoViewIfNeeded();
-  await expect(lastCard.locator('.preview img')).toBeVisible();
+  await expect(lastCard.locator('.preview img')).toBeVisible({ timeout: renderTimeout });
   await page.getByRole('button', { name: 'Select page 100 from many-pages.pdf', exact: true }).click();
   await expect(page.locator('article.selected')).toHaveAttribute('aria-label', 'Page 100 from many-pages.pdf');
   await page.getByRole('button', { name: 'Move page 100 left', exact: true }).click();

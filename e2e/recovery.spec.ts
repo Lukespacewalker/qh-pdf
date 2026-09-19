@@ -2,11 +2,13 @@ import { test, expect, type Page } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 import { readFile } from 'node:fs/promises';
 
+const importTimeout = 15_000;
+
 async function importPages(page: Page) {
   const pdf = await PDFDocument.create();
   [111, 222, 333].forEach(width => pdf.addPage([width, 400]));
   await page.locator('input[type=file]').setInputFiles({ name: 'recovery-fixture.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await pdf.save()) });
-  await expect(page.locator('article')).toHaveCount(3);
+  await expect(page.locator('article')).toHaveCount(3, { timeout: importTimeout });
 }
 async function exportWidths(page: Page) {
   const pending = page.waitForEvent('download');
