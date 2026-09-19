@@ -446,14 +446,14 @@
 
   Use a temporary ignored Playwright harness against the production build. Guard all requests so import/edit/export remains same-origin static GET traffic, measure import/first-thumbnail/responsiveness, exercise selection/rotation/duplicate/undo/redo, cancel one export, then complete and validate one full export locally. Delete the temporary export after validation.
 
-- [ ] **Step 4: Add and dry-run production deployment automation**
+- [x] **Step 4: Add and dry-run production deployment automation**
 
   Add a `Deploy production` workflow triggered by successful completion of `Verify` on `main` plus manual dispatch. Rebuild in the deployment job, run `wrangler deploy --dry-run`, then publish with the pinned Cloudflare Wrangler action. Configure the Cloudflare account id and scoped API token as GitHub `production` environment secrets; never commit credentials.
 
-- [ ] **Step 5: Re-run final checks on the release revision**
+- [x] **Step 5: Re-run final checks on the release revision**
 
   Run Node 24 `npm test`, `npm run build`, `npm run test:browser`, `npm run test:hosting`, and the full large-document benchmark. Confirm the PR check succeeds after the new commit.
 
-- [ ] **Step 6: Merge, observe CI/CD, and verify production**
+- [x] **Step 6: Merge, observe CI/CD, and verify production**
 
-  Merge PR #10 into `main`, wait for both verification and production deployment to succeed, then run `QH_PDF_BASE_URL=https://pdf.quackandhonk.com npm run test:hosting`. Confirm the live revision exposes the brand link, required security headers, and no unexpected document/network path.
+  PR #11 supplied the app icon and merged first. PR #10 then merged into `main`; both verification and production deployment succeeded for merge commit `0323186`. The live Chromium/Cloudflare suite confirmed the brand link, same-origin icon, required security headers, and no unexpected document/network path.

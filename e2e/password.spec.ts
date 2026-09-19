@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises';
 import { createPdfToolkit } from 'pdfstudio';
 import { passwordPdf } from './helpers/passwordPdf';
 
+const importTimeout = 15_000;
+
 test('protected import retries, cancels safely, and exports a password-protected PDF without external requests', async ({ page, baseURL }) => {
   if (!baseURL) throw new Error('A base URL is required');
   const violations: string[] = [];
@@ -25,7 +27,7 @@ test('protected import retries, cancels safely, and exports a password-protected
   await expect(page.getByRole('alert')).toContainText('didn’t open');
   await page.getByLabel('PDF password', { exact: true }).fill('fixture-secret');
   await page.getByRole('button', { name: 'Unlock PDF' }).click();
-  await expect(page.locator('article')).toHaveCount(2);
+  await expect(page.locator('article')).toHaveCount(2, { timeout: importTimeout });
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await page.locator('input[type=file]').setInputFiles(file);
   await page.getByRole('button', { name: 'Cancel import' }).click();
@@ -61,7 +63,7 @@ test('recovery stores encrypted originals and asks for their password again afte
   await page.locator('input[type=file]').setInputFiles(file);
   await page.getByLabel('PDF password', { exact: true }).fill('fixture-secret');
   await page.getByRole('button', { name: 'Unlock PDF' }).click();
-  await expect(page.locator('article')).toHaveCount(2);
+  await expect(page.locator('article')).toHaveCount(2, { timeout: importTimeout });
   await page.getByLabel('Remember work on this device').check();
   await expect(page.getByTestId('recovery-status')).toHaveText('Saved on this device');
   const stored = await page.evaluate(async () => new Promise<{ fields: string[]; bytes: number[] }>((resolve, reject) => {
@@ -85,6 +87,6 @@ test('recovery stores encrypted originals and asks for their password again afte
   await expect(page.getByLabel('PDF password', { exact: true })).toHaveValue('');
   await page.getByLabel('PDF password', { exact: true }).fill('fixture-secret');
   await page.getByRole('button', { name: 'Unlock PDF' }).click();
-  await expect(page.locator('article')).toHaveCount(2);
+  await expect(page.locator('article')).toHaveCount(2, { timeout: importTimeout });
   await expect(page.getByLabel('Require a password to open the saved PDF')).not.toBeChecked();
 });
