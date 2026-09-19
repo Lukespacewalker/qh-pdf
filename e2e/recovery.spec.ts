@@ -87,13 +87,17 @@ test('keyboard reordering supports drop and cancellation', async ({ page }) => {
   await page.getByRole('button', { name: 'Drag page 1 to reorder' }).focus();
   // A held key allows the sensor's deferred key listener to attach before the next key.
   await page.keyboard.press('Space', { delay: 60 });
+  await expect(page.locator('.drag-overlay')).toBeVisible();
   await page.keyboard.press('ArrowRight');
+  await expect(page.getByText('Move to position 2.', { exact: true })).toBeAttached();
   await page.keyboard.press('Space', { delay: 60 });
   await expect(page.locator('.drag-overlay')).toHaveCount(0);
   expect(await exportWidths(page)).toEqual([222, 111, 333]);
   await page.getByRole('button', { name: 'Drag page 1 to reorder' }).focus();
   await page.keyboard.press('Space', { delay: 60 });
+  await expect(page.locator('.drag-overlay')).toBeVisible();
   await page.keyboard.press('ArrowRight');
+  await expect(page.getByText('Move to position 2.', { exact: true })).toBeAttached();
   await page.keyboard.press('Escape');
   await expect(page.locator('.drag-overlay')).toHaveCount(0);
   expect(await exportWidths(page)).toEqual([222, 111, 333]);
