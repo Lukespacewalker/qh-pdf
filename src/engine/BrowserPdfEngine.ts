@@ -1,6 +1,6 @@
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import type { PdfEngine, ImportedDocument, PdfPasswordOptions } from './PdfEngine';
+import type { PdfEngine, ImportedDocument, PdfExportOptions, PdfPasswordOptions } from './PdfEngine';
 import type { WorkspaceState } from '../domain/workspace';
 import { AppError } from '../errors/AppError';
 import { newId } from '../lib/ids';
@@ -93,15 +93,17 @@ export class BrowserPdfEngine implements PdfEngine {
     }
   }
 
-  async exportWorkspace(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, options: PdfPasswordOptions = {}): Promise<Blob> {
+  async exportWorkspace(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, options: PdfExportOptions = {}): Promise<Blob> {
     try {
-      let bytes = new Uint8Array(await runPdfExport(documents, workspace));
+      let bytes = new Uint8Array(await runPdfExport(documents, workspace, options));
       if (options.password !== undefined) {
+        options.onProgress?.({ phase: 'protecting', completed: workspace.pages.length, total: workspace.pages.length });
         const { lockPdf } = await import('./PdfSecurity');
-        bytes = await lockPdf(bytes, options.password);
+        bytes = await lockPdf(bytes, options.password, options.signal);
       }
       return new Blob([bytes.buffer], { type: 'application/pdf' });
-    } catch {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
       throw new AppError('export-failed', 'We couldn’t create the PDF. Your workspace is still here.');
     }
   }

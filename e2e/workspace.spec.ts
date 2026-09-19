@@ -72,6 +72,32 @@ test('real PDF previews and edited export preserve order, duplicate pages and so
   expect(errors).toEqual([]);
 });
 
+test('long export reports progress and can be cancelled without losing the workspace', async ({ page }) => {
+  const pageCount = 30;
+  let downloads = 0;
+  page.on('download', () => { downloads += 1; });
+  await page.route(/\/assets\/PdfExport\.worker-.*\.js$/, async route => {
+    await new Promise(resolve => setTimeout(resolve, 1_000));
+    await route.continue();
+  });
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile(
+    'large-synthetic.pdf',
+    Array.from({ length: pageCount }, (_, index) => 200 + (index % 100)),
+  ));
+  await expect(page.locator('article')).toHaveCount(pageCount);
+
+  await page.getByRole('button', { name: 'Save PDF', exact: true }).click();
+  await expect(page.getByRole('progressbar', { name: 'Creating PDF' })).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel export' }).click();
+
+  await expect(page.getByText('Export cancelled. Your workspace is still here.', { exact: true })).toBeVisible();
+  await expect(page.locator('article')).toHaveCount(pageCount);
+  await expect(page.getByRole('button', { name: 'Save PDF', exact: true })).toBeEnabled();
+  await page.waitForTimeout(500);
+  expect(downloads).toBe(0);
+});
+
 test('mixes PNG, JPEG, WebP and PDF without non-static network requests', async ({ page, baseURL }) => {
   if (!baseURL) throw new Error('The network privacy check requires a configured base URL');
   const expectedOrigin = new URL(baseURL).origin;

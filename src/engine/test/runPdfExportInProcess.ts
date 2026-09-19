@@ -1,7 +1,7 @@
 import type { WorkspaceState } from '../../domain/workspace';
 import { assemblePdf } from '../assemblePdf';
-import type { ImportedDocument } from '../PdfEngine';
-import type { PdfExportOptions, PdfExportRequest } from '../PdfExportProtocol';
+import type { ImportedDocument, PdfExportOptions } from '../PdfEngine';
+import type { PdfExportRequest } from '../PdfExportProtocol';
 
 // Vitest runs without the browser Worker API. Keep preparation and real
 // pdf-lib assembly in these tests; only the browser transport is replaced.

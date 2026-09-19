@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, pointerWithin, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { MascotState } from '../brand/MascotState';
-import type { PdfEngine } from '../engine/PdfEngine';
+import type { ExportProgress, PdfEngine } from '../engine/PdfEngine';
 import { RecoveryPanel } from '../recovery/RecoveryPanel';
 import { PageCard } from './PageCard';
 import { Capabilities } from './Capabilities';
@@ -29,6 +29,9 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
   const [recoveryPending, setRecoveryPending] = useState(true);
   const [activePage, setActivePage] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const [exportNotice, setExportNotice] = useState('');
+  const exportJob = useRef<AbortController | null>(null);
   const store = useWorkspaceStore();
   const ws = store.history.present;
   const locked = store.busy || exporting || restoring;
@@ -40,27 +43,46 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   useEffect(() => { setDone(false); }, [ws.pages]);
+  useEffect(() => () => exportJob.current?.abort(), []);
 
   async function add(files: File[]) {
     if (editLocked || files.length === 0) return;
     setDone(false);
+    setExportNotice('');
     await store.addFiles(files, importDocument);
   }
   async function save(password?: string) {
     if (editLocked || ws.pages.length === 0) return false;
+    const controller = new AbortController();
+    exportJob.current = controller;
     setExporting(true);
     setDone(false);
+    setExportNotice('');
+    setExportProgress({ phase: 'assembling', completed: 0, total: ws.pages.length });
     store.clearError();
     try {
-      const blob = await engine.exportWorkspace(store.documents, ws, password === undefined ? undefined : { password });
+      const blob = await engine.exportWorkspace(store.documents, ws, {
+        ...(password === undefined ? {} : { password }),
+        signal: controller.signal,
+        onProgress: setExportProgress,
+      });
       download(blob);
       setDone(true);
       return true;
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setExportNotice('Export cancelled. Your workspace is still here.');
+        return false;
+      }
       useWorkspaceStore.setState({ error: error instanceof Error ? error.message : 'Export failed' });
       return false;
-    } finally { setExporting(false); }
+    } finally {
+      if (exportJob.current === controller) exportJob.current = null;
+      setExportProgress(null);
+      setExporting(false);
+    }
   }
+  function cancelExport() { exportJob.current?.abort(); }
   const fileInput = <input ref={input} className="hidden-input" type="file" multiple
     aria-label="Import document files" accept="application/pdf,image/jpeg,image/png,image/webp"
     disabled={editLocked} onChange={event => {
@@ -131,8 +153,15 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
           </SortableContext>
           <DragOverlay>{activePage ? <div className="drag-overlay">Moving page {ws.pages.findIndex(page => page.id === activePage) + 1}</div> : null}</DragOverlay>
         </DndContext>
-        <SavePanel count={ws.pages.length} locked={editLocked} exporting={exporting} onSave={save} />
-        {exporting && <div className="status" role="status"><MascotState state="working" alt="Quack working" /><div><strong>Creating your PDF…</strong><div className="sub">Everything is being processed in this browser.</div></div></div>}
+        <SavePanel count={ws.pages.length} locked={editLocked} exporting={exporting} onSave={save} onCancel={cancelExport} />
+        {exporting && <div className="status" role="status"><MascotState state="working" alt="Quack working" /><div className="export-status">
+          <strong>{exportProgress?.phase === 'protecting' ? 'Protecting your PDF…' :
+            `Creating page ${exportProgress?.completed ?? 0} of ${exportProgress?.total ?? ws.pages.length}…`}</strong>
+          <progress aria-label="Creating PDF" max={exportProgress?.total ?? ws.pages.length}
+            value={exportProgress?.completed ?? 0} />
+          <div className="sub">Everything is being processed in this browser.</div>
+        </div></div>}
+        {exportNotice && <div className="save-complete" role="status">{exportNotice}</div>}
         {done && <div className="save-complete" role="status"><strong>Your PDF is ready.</strong> Created without uploading your document.</div>}
       </>}
     </div>

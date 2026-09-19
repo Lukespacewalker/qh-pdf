@@ -1,16 +1,5 @@
 import type { Rotation, WorkspacePage } from '../domain/workspace';
-import type { ImportedPageDescriptor, PdfPasswordOptions } from './PdfEngine';
-
-export interface ExportProgress {
-  phase: 'assembling' | 'protecting';
-  completed: number;
-  total: number;
-}
-
-export interface PdfExportOptions extends PdfPasswordOptions {
-  signal?: AbortSignal;
-  onProgress?: (progress: ExportProgress) => void;
-}
+import type { ExportProgress, ImportedPageDescriptor } from './PdfEngine';
 
 export interface PdfExportDocument {
   id: string;

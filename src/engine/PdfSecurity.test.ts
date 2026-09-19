@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { unlockPdf } from './PdfSecurity';
+import { lockPdf, unlockPdf } from './PdfSecurity';
 
 class FakeWorker {
   static instances: FakeWorker[] = [];
@@ -61,5 +61,19 @@ describe('password worker lifecycle', () => {
     retry.onmessage!({ data: { ok: false, code: 'password-protected', message: 'Please try again.' } } as MessageEvent);
     await expect(second).rejects.toMatchObject({ code: 'password-protected' });
     expect(retry.terminate).toHaveBeenCalledOnce();
+  });
+
+  it('terminates password encryption when export is cancelled', async () => {
+    const controller = new AbortController();
+    const source = new Uint8Array([1, 2, 3]);
+    const pending = lockPdf(source, 'test', controller.signal);
+    const rejection = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    const worker = FakeWorker.instances[0];
+
+    controller.abort();
+    await rejection;
+
+    expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(new Uint8Array(source)).toEqual(new Uint8Array([1, 2, 3]));
   });
 });

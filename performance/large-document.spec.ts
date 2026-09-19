@@ -136,6 +136,30 @@ for (const pageCount of requestedCounts) {
     expect(await download.failure()).toBeNull();
     const exportMs = performance.now() - exportStarted;
 
+    let cancelMs: number | null = null;
+    let cancelSupported = false;
+    if (pageCount === Math.max(...requestedCounts)) {
+      await page.route(/\/assets\/PdfExport\.worker-.*\.js$/, async route => {
+        await new Promise(resolve => setTimeout(resolve, 1_000));
+        await route.continue();
+      });
+      let cancelledDownload = false;
+      const recordDownload = () => { cancelledDownload = true; };
+      page.on('download', recordDownload);
+      const cancelStarted = performance.now();
+      await page.getByRole('button', { name: 'Save PDF', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Cancel export' })).toBeVisible();
+      await page.getByRole('button', { name: 'Cancel export' }).click();
+      await expect(page.getByText('Export cancelled. Your workspace is still here.', { exact: true })).toBeVisible();
+      await expect(page.locator('article')).toHaveCount(pageCount);
+      await expect(page.getByRole('button', { name: 'Save PDF', exact: true })).toBeEnabled();
+      cancelMs = performance.now() - cancelStarted;
+      cancelSupported = true;
+      await page.waitForTimeout(1_100);
+      expect(cancelledDownload).toBe(false);
+      page.off('download', recordDownload);
+    }
+
     const sampled = await page.evaluate(() => {
       const state = (window as BenchmarkWindow).__qhBenchmark!;
       return {
@@ -153,8 +177,8 @@ for (const pageCount of requestedCounts) {
       exportMs,
       maxMainThreadGapMs: sampled.maxMainThreadGapMs,
       approxPeakJsHeapBytes: sampled.approxPeakJsHeapBytes,
-      cancelMs: null,
-      cancelSupported: false,
+      cancelMs,
+      cancelSupported,
       heapMeasurement: sampled.approxPeakJsHeapBytes === null ? 'unavailable' : 'chromium-performance-memory',
     };
     results.push(result);

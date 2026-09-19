@@ -1,9 +1,8 @@
 import type { WorkspaceState } from '../domain/workspace';
 import { AppError } from '../errors/AppError';
-import type { ImportedDocument } from './PdfEngine';
+import type { ImportedDocument, PdfExportOptions } from './PdfEngine';
 import type {
   PdfExportDocument,
-  PdfExportOptions,
   PdfExportRequest,
   PdfExportResponse,
 } from './PdfExportProtocol';
