@@ -35,9 +35,29 @@ Playwright starts `vite preview` on `127.0.0.1:4173` and stops it after the test
 
 All six required mascot assets are included and served locally. No ZIP extraction or Python restoration step is required.
 
+## Hosting
+
+The production target is [pdf.quackandhonk.com](https://pdf.quackandhonk.com), served by Cloudflare Workers Static Assets. `wrangler.jsonc` publishes only `dist/`: there is no Worker script, processing API, database or document storage. Browser PDF processing remains local. The `public/_headers` policy restricts scripts and network connections to local assets, permits browser-created previews, and disables framing.
+
+On Node.js 24, verify a clean install before an authorized deployment:
+
+```bash
+npm ci
+npm test
+npm run build
+npm run test:browser
+npm run test:hosting
+```
+
+`test:hosting` starts a local Cloudflare runtime and exercises the same synthetic document workflows plus HTTP security headers. It does not deploy. With an authenticated Cloudflare account that owns the domain, `npm run deploy` builds and publishes the static app and configures its custom domain. Deployment is manual; the GitHub verification workflow has read-only permissions and does not publish.
+
+To run the hosting checks against the live site explicitly, set `QH_PDF_BASE_URL=https://pdf.quackandhonk.com` in the shell before running `npm run test:hosting`, then unset it. These checks use generated documents and in-browser file inputs; no document upload endpoint is involved.
+
+Static asset requests and storage are free under [Cloudflare's current pricing](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/). Domain renewal is separate. Keep this deployment static when estimating costs; adding server-side code or other services changes the applicable quotas.
+
 ## Verification
 
-The `Verify` GitHub Actions workflow runs `npm ci`, ten Vitest domain/export tests, a TypeScript/Vite production build and six Chromium browser tests. The workflow has read-only repository permissions and does not deploy the app.
+The `Verify` GitHub Actions workflow runs `npm ci`, ten Vitest domain/export tests, a TypeScript/Vite production build, and six Chromium workflows against both Vite preview and the local Cloudflare runtime. The hosting suite also checks HTTP security headers. The workflow has read-only repository permissions and does not deploy the app.
 
 The export tests create and reopen real PDFs. The browser tests use the production build to exercise real PDF.js previews, page editing, downloads, PDF/image mixing, malformed-input recovery, mascot decoding, and a 390-pixel-wide viewport. PDF fixtures are synthetic, not user documents.
 
