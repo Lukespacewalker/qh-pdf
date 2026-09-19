@@ -81,6 +81,37 @@ test('a storage failure remains visible and does not prevent exporting the open 
   expect(await exportWidths(page)).toEqual([111, 222, 333]);
 });
 
+test('an initially empty stale tab cannot recreate a saved copy after another tab clears it', async ({ page, context }) => {
+  await page.goto('/');
+  await importPages(page);
+  const other = await context.newPage();
+  await other.goto('/');
+  await importPages(other);
+  await other.getByLabel('Remember work on this device').check();
+  await expect(other.getByTestId('recovery-status')).toHaveText('Saved on this device');
+  await other.getByRole('button', { name: 'Clear saved work' }).click();
+  await expect(other.getByTestId('recovery-status')).toHaveText('Saved copy cleared. Recovery is off.');
+  const cleared = await other.evaluate(() => new Promise((resolve, reject) => {
+    const request = indexedDB.open('qh-pdf-recovery', 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const transaction = db.transaction('workspaces', 'readonly');
+      const value = transaction.objectStore('workspaces').get('current');
+      transaction.oncomplete = () => { resolve(value.result); db.close(); };
+    };
+  }));
+  expect(cleared).toEqual({ revision: expect.any(String), savedAt: expect.any(Number), snapshot: null });
+  await page.getByLabel('Remember work on this device').check();
+  await expect(page.getByRole('alert')).toContainText('another tab');
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Choose files' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Restore saved work' })).toHaveCount(0);
+  await importPages(page);
+  await page.getByLabel('Remember work on this device').check();
+  await expect(page.getByTestId('recovery-status')).toHaveText('Saved on this device');
+});
+
 test('keyboard reordering supports drop and cancellation', async ({ page }) => {
   await page.goto('/');
   await importPages(page);
@@ -120,6 +151,7 @@ test('failed clearing never claims that the saved copy was removed', async ({ pa
   await page.getByLabel('Remember work on this device').check();
   await expect(page.getByTestId('recovery-status')).toHaveText('Saved on this device');
   await page.evaluate(() => {
+    IDBObjectStore.prototype.put = function () { throw new DOMException('Synthetic write failure', 'UnknownError'); };
     IDBObjectStore.prototype.delete = function () { throw new DOMException('Synthetic delete failure', 'UnknownError'); };
   });
   await page.getByRole('button', { name: 'Clear saved work' }).click();

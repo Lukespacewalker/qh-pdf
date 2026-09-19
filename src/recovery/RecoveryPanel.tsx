@@ -10,6 +10,7 @@ export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }
   const pages = useWorkspaceStore(s => s.history.present.pages);
   const [ready, setReady] = useState(false);
   const [available, setAvailable] = useState<SavedWork | null>(null);
+  const [hasSavedCopy, setHasSavedCopy] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [status, setStatus] = useState('Recovery is off. Refreshing or closing this tab loses your work.');
   const [error, setError] = useState('');
@@ -25,9 +26,10 @@ export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }
     readSavedWork().then(saved => {
       if (!active) return;
       revision.current = saved?.revision ?? null;
-      setAvailable(saved);
+      setAvailable(saved?.snapshot ? saved : null);
+      setHasSavedCopy(Boolean(saved?.snapshot));
       setReady(true);
-      onPending(Boolean(saved));
+      onPending(Boolean(saved?.snapshot));
     }).catch(() => {
       if (active) { setError('Recovery storage is unavailable in this browser. You can still work and download your PDF.'); setReady(true); onPending(false); }
     });
@@ -44,7 +46,8 @@ export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }
       try {
         const snapshot = createSnapshot(documents, { pages, selectedPageIds: [] });
         const saved = await writeSavedWork(snapshot, revision.current);
-        revision.current = saved!.revision;
+        revision.current = saved.revision;
+        setHasSavedCopy(true);
         lastSavedPages.current = pages;
         if (generation.current === currentGeneration && sequence === saveSequence.current) { setStatus('Saved on this device'); setError(''); }
       } catch (failure) {
@@ -65,8 +68,9 @@ export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }
     setError('');
     queue.current = queue.current.catch(() => {}).then(async () => {
       try {
-        await writeSavedWork(null, revision.current);
-        revision.current = null;
+        const cleared = await writeSavedWork(null, revision.current);
+        revision.current = cleared.revision;
+        setHasSavedCopy(false);
         lastSavedPages.current = null;
         setAvailable(null);
         onPending(false);
@@ -113,7 +117,7 @@ export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }
         }} />Remember work on this device</label>
       <p>Optional. Saves source files and page edits in this browser until cleared. Anyone using this browser can restore unprotected files. Protected PDFs ask for their opening password again; passwords and unlocked copies are never saved.</p>
       <div className="recovery-actions"><span role="status" data-testid="recovery-status">{enabled && pages !== lastSavedPages.current ? 'Saving on this device…' : status}</span>
-        {revision.current && <button className="text-btn" disabled={locked || clearing} onClick={() => void clear()}>Clear saved work</button>}
+        {hasSavedCopy && <button className="text-btn" disabled={locked || clearing} onClick={() => void clear()}>Clear saved work</button>}
       </div>
     </>}
     {error && <p className="notice" role="alert">{error}</p>}

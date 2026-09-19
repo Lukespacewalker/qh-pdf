@@ -40,6 +40,8 @@ The welcome screen describes the supported tasks and file types. Page editing co
 
 Recovery stores the original source files and current page edits atomically, not undo history. It retains encrypted originals and asks for their opening password again when restoring; decrypted working bytes and passwords are never persisted. A saved-status indicator reports pending and failed writes. Conflicting writes from another tab are rejected rather than silently replacing that tab's copy. Browser storage is not a backup: unsaved changes, storage eviction, private browsing, device loss or clearing site data can still lose work.
 
+Clearing overwrites the recovery record with an empty revision marker containing no documents or page edits. This prevents a stale tab from recreating cleared content, including tabs opened before the first save.
+
 All six required mascot assets are included and served locally. No ZIP extraction or Python restoration step is required.
 
 ## Hosting

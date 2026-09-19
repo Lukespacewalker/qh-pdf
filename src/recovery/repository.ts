@@ -1,6 +1,6 @@
 import type { Snapshot } from './snapshot';
 
-export interface SavedWork { revision: string; savedAt: number; snapshot: Snapshot }
+export interface SavedWork { revision: string; savedAt: number; snapshot: Snapshot | null }
 export class RecoveryConflict extends Error {}
 const databaseName = 'qh-pdf-recovery';
 const storeName = 'workspaces';
@@ -29,14 +29,14 @@ export async function readSavedWork(): Promise<SavedWork | null> {
 }
 
 // Compare and write in ONE transaction: stale tabs cannot overwrite a newer or cleared copy.
-export async function writeSavedWork(snapshot: Snapshot | null, expectedRevision: string | null): Promise<SavedWork | null> {
+export async function writeSavedWork(snapshot: Snapshot | null, expectedRevision: string | null): Promise<SavedWork> {
   const db = await openDatabase();
   try {
     return await new Promise((resolve, reject) => {
       const transaction = db.transaction(storeName, 'readwrite');
       const store = transaction.objectStore(storeName);
       const request = store.get('current');
-      let result: SavedWork | null = null;
+      let result: SavedWork;
       let failure: unknown;
       request.onsuccess = () => {
         if ((request.result?.revision ?? null) !== expectedRevision) {
@@ -45,10 +45,10 @@ export async function writeSavedWork(snapshot: Snapshot | null, expectedRevision
           return;
         }
         try {
-          if (snapshot) {
-            result = { revision: crypto.randomUUID(), savedAt: Date.now(), snapshot };
-            store.put(result, 'current');
-          } else store.delete('current');
+          // Clearing replaces all content with a new revision, never the original
+          // null revision. Otherwise an old initially-empty tab could recreate it.
+          result = { revision: crypto.randomUUID(), savedAt: Date.now(), snapshot };
+          store.put(result, 'current');
         } catch (error) { failure = error; transaction.abort(); }
       };
       transaction.oncomplete = () => resolve(result);
