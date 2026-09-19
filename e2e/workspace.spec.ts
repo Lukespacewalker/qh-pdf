@@ -70,12 +70,14 @@ test('real PDF previews and edited export preserve order, duplicate pages and so
   expect(errors).toEqual([]);
 });
 
-test('mixes PNG, JPEG, WebP and PDF without non-static network requests', async ({ page }) => {
+test('mixes PNG, JPEG, WebP and PDF without non-static network requests', async ({ page, baseURL }) => {
+  if (!baseURL) throw new Error('The network privacy check requires a configured base URL');
+  const expectedOrigin = new URL(baseURL).origin;
   const violations: string[] = [];
   page.on('request', request => {
     const url = new URL(request.url());
     if (!['http:', 'https:'].includes(url.protocol)) return;
-    if (url.origin !== 'http://127.0.0.1:4173' || request.method() !== 'GET' || url.search ||
+    if (url.origin !== expectedOrigin || request.method() !== 'GET' || url.search ||
         !(url.pathname === '/' || url.pathname.startsWith('/assets/') || url.pathname.startsWith('/mascots/'))) {
       violations.push(`${request.method()} ${url.pathname}`);
     }

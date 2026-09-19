@@ -3,13 +3,17 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "engines": { "node": ">=24 <25" },
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:hosting": "playwright test --config=playwright.hosting.config.ts",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "pdf-lib": "^1.17.1",
@@ -20,11 +24,12 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
-    "@vitejs/plugin-react": "^5.0.2",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.2",
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.135.0"
   }
 }

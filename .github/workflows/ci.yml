@@ -31,5 +31,6 @@ jobs:
       - name: Install browser
         run: npx playwright install --with-deps chromium
       - run: npm run test:browser
+      - run: npm run test:hosting
       - name: Confirm verification did not modify tracked files
         run: git diff --exit-code
