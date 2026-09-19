@@ -98,6 +98,27 @@ test('long export reports progress and can be cancelled without losing the works
   expect(downloads).toBe(0);
 });
 
+test('large page grids defer off-screen thumbnails while keeping every page editable', async ({ page }) => {
+  const pageCount = 100;
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile(
+    'many-pages.pdf',
+    Array.from({ length: pageCount }, (_, index) => 200 + index),
+  ));
+  await expect(page.locator('article')).toHaveCount(pageCount);
+  await expect(page.locator('article .preview img').first()).toBeVisible();
+  await page.waitForTimeout(500);
+  expect(await page.locator('article .preview img').count()).toBeLessThan(50);
+
+  const lastCard = page.locator('article').last();
+  await lastCard.scrollIntoViewIfNeeded();
+  await expect(lastCard.locator('.preview img')).toBeVisible();
+  await page.getByRole('button', { name: 'Select page 100 from many-pages.pdf', exact: true }).click();
+  await expect(page.locator('article.selected')).toHaveAttribute('aria-label', 'Page 100 from many-pages.pdf');
+  await page.getByRole('button', { name: 'Move page 100 left', exact: true }).click();
+  await expect(page.locator('article.selected')).toHaveAttribute('aria-label', 'Page 99 from many-pages.pdf');
+});
+
 test('mixes PNG, JPEG, WebP and PDF without non-static network requests', async ({ page, baseURL }) => {
   if (!baseURL) throw new Error('The network privacy check requires a configured base URL');
   const expectedOrigin = new URL(baseURL).origin;

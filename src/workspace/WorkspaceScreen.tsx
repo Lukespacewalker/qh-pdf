@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, pointerWithin, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { MascotState } from '../brand/MascotState';
 import type { ExportProgress, PdfEngine } from '../engine/PdfEngine';
+import { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
 import { RecoveryPanel } from '../recovery/RecoveryPanel';
 import { PageCard } from './PageCard';
 import { Capabilities } from './Capabilities';
@@ -38,6 +39,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
   const editLocked = locked || recoveryPending || Boolean(activePage);
   const selected = ws.selectedPageIds.length;
   const { importDocument, passwordDialog } = usePasswordImport(engine);
+  const thumbnailScheduler = useMemo(() => new ThumbnailScheduler(2), []);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -148,7 +150,8 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
             <section className="grid" aria-label="Document pages">{ws.pages.map((page, index) => {
               const doc = store.documents.get(page.sourceDocumentId);
               if (!doc) return <div className="notice" role="alert" key={page.id}>The source for page {index + 1} is missing. Undo the last change or add the document again.</div>;
-              return <PageCard key={page.id} page={page} index={index} doc={doc} engine={engine} disabled={locked || recoveryPending} last={index === ws.pages.length - 1} />;
+              return <PageCard key={page.id} page={page} index={index} doc={doc} engine={engine}
+                scheduler={thumbnailScheduler} disabled={locked || recoveryPending} last={index === ws.pages.length - 1} />;
             })}</section>
           </SortableContext>
           <DragOverlay>{activePage ? <div className="drag-overlay">Moving page {ws.pages.findIndex(page => page.id === activePage) + 1}</div> : null}</DragOverlay>
