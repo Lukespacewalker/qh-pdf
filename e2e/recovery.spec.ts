@@ -76,8 +76,10 @@ test('a storage failure remains visible and does not prevent exporting the open 
   });
   await page.goto('/');
   await importPages(page);
-  await page.getByLabel('Remember work on this device').check();
+  // A failed save immediately turns recovery off; click must not assert it stays checked.
+  await page.getByLabel('Remember work on this device').click();
   await expect(page.getByRole('alert')).toContainText('could not save');
+  await expect(page.getByLabel('Remember work on this device')).not.toBeChecked();
   expect(await exportWidths(page)).toEqual([111, 222, 333]);
 });
 
@@ -102,8 +104,9 @@ test('an initially empty stale tab cannot recreate a saved copy after another ta
     };
   }));
   expect(cleared).toEqual({ revision: expect.any(String), savedAt: expect.any(Number), snapshot: null });
-  await page.getByLabel('Remember work on this device').check();
+  await page.getByLabel('Remember work on this device').click();
   await expect(page.getByRole('alert')).toContainText('another tab');
+  await expect(page.getByLabel('Remember work on this device')).not.toBeChecked();
   await page.reload();
   await expect(page.getByRole('button', { name: 'Choose files' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Restore saved work' })).toHaveCount(0);
