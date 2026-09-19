@@ -63,6 +63,16 @@ describe('password worker lifecycle', () => {
     expect(retry.terminate).toHaveBeenCalledOnce();
   });
 
+  it('maps a malformed password-worker response to a safe error', async () => {
+    const pending = unlockPdf(new ArrayBuffer(1), 'test');
+    const rejection = expect(pending).rejects.toMatchObject({ code: 'import-failed' });
+    const worker = FakeWorker.instances[0];
+
+    expect(() => worker.onmessage!({ data: null } as MessageEvent)).not.toThrow();
+    await rejection;
+    expect(worker.terminate).toHaveBeenCalledOnce();
+  });
+
   it('terminates password encryption when export is cancelled', async () => {
     const controller = new AbortController();
     const source = new Uint8Array([1, 2, 3]);
@@ -75,5 +85,18 @@ describe('password worker lifecycle', () => {
 
     expect(worker.terminate).toHaveBeenCalledOnce();
     expect(new Uint8Array(source)).toEqual(new Uint8Array([1, 2, 3]));
+  });
+
+  it('does not miss password-export abort during listener registration', async () => {
+    let aborted = false;
+    const signal = {
+      get aborted() { return aborted; },
+      addEventListener() { aborted = true; },
+      removeEventListener() {},
+    } as unknown as AbortSignal;
+
+    await expect(lockPdf(new Uint8Array([1, 2, 3]), 'test', signal))
+      .rejects.toMatchObject({ name: 'AbortError' });
+    expect(FakeWorker.instances[0].terminate).toHaveBeenCalledOnce();
   });
 });

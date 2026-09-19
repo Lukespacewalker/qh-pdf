@@ -95,6 +95,31 @@ describe('PDF export worker bridge', () => {
     expect(new Uint8Array(doc.bytes)).toEqual(new Uint8Array([1, 2, 3]));
   });
 
+  it('does not miss an abort that races listener registration', async () => {
+    let aborted = false;
+    const signal = {
+      get aborted() { return aborted; },
+      addEventListener() { aborted = true; },
+      removeEventListener() {},
+    } as unknown as AbortSignal;
+    const doc = document();
+
+    await expect(runPdfExport(new Map([[doc.id, doc]]), workspace(), { signal }))
+      .rejects.toMatchObject({ name: 'AbortError' });
+    expect(FakeWorker.instances[0].terminate).toHaveBeenCalledOnce();
+  });
+
+  it('maps a malformed worker response to a safe error and terminates', async () => {
+    const doc = document();
+    const pending = runPdfExport(new Map([[doc.id, doc]]), workspace());
+    const rejection = expect(pending).rejects.toMatchObject({ code: 'export-failed' });
+    const worker = FakeWorker.instances[0];
+
+    expect(() => worker.onmessage!({ data: null } as MessageEvent)).not.toThrow();
+    await rejection;
+    expect(worker.terminate).toHaveBeenCalledOnce();
+  });
+
   it('maps worker construction failure to a safe export error', async () => {
     FakeWorker.failConstruction = true;
     const doc = document();

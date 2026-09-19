@@ -19,7 +19,7 @@ This is the current execution checklist, not a completion claim. A box is checke
 - [x] Verify the final revision with Node 24 unit, build, Chromium browser, and local Cloudflare hosting suites.
 - [x] Record which benchmark sizes completed and the actual browser/fixture coverage.
 
-Evidence on the revision containing this checklist: `volta run --node 24 npm run bench:large-documents` completed five synthetic blank-page Chromium cases (10/50/100/300/500) on 2026-09-19. At 500 pages the recorded sample was 253 ms import, 295 ms to first thumbnail, 25.7 thumbnails/s while scrolling, 282 ms export, 33.4 ms maximum sampled frame gap, and 290 ms cancellation. These are local regression measurements, not public performance claims. After the documentation commit, Node 24 ran 43 Vitest tests, 20 production-build Chromium workflows, and 21 local Cloudflare/Chromium workflows successfully; the build still reports its existing large-chunk warning.
+Evidence on the revision containing this checklist: `volta run --node 24 npm run bench:large-documents` completed five synthetic blank-page Chromium cases (10/50/100/300/500) on 2026-09-19. At 500 pages the final recorded sample was 232 ms import, 309 ms to first thumbnail, 26.6 thumbnails/s while scrolling, 288 ms export, 33.4 ms maximum sampled frame gap, and 293 ms cancellation. These are local regression measurements, not public performance claims. Node 24 ran 47 Vitest tests, 20 production-build Chromium workflows, and 21 local Cloudflare/Chromium workflows successfully; the build still reports its existing large-chunk warning.
 
 ## P1 — Full-page preview
 

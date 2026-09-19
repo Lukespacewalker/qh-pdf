@@ -60,18 +60,19 @@ describe('ThumbnailScheduler', () => {
     await expect(running.promise).resolves.toBe('running');
   });
 
-  it('cancels active work, starts the next job, and ignores late completion', async () => {
+  it('rejects an active consumer immediately but keeps the slot bounded until work settles', async () => {
     const scheduler = new ThumbnailScheduler(1);
     const activeResult = deferred<string>();
     const active = scheduler.schedule(() => activeResult.promise);
-    const next = scheduler.schedule(async () => 'next');
+    let nextStarted = false;
+    const next = scheduler.schedule(async () => { nextStarted = true; return 'next'; });
 
     active.cancel();
     await expect(active.promise).rejects.toMatchObject({ name: 'AbortError' });
-    await expect(next.promise).resolves.toBe('next');
+    expect(nextStarted).toBe(false);
     activeResult.resolve('too late');
-    await Promise.resolve();
-    await expect(active.promise).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(next.promise).resolves.toBe('next');
+    expect(nextStarted).toBe(true);
   });
 
   it('continues after one job fails', async () => {

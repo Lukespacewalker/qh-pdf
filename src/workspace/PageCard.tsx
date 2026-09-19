@@ -24,7 +24,8 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, last }
   }, [setNodeRef]);
 
   useEffect(() => {
-    if (!cardNode || typeof IntersectionObserver === 'undefined') {
+    if (!cardNode) return;
+    if (typeof IntersectionObserver === 'undefined') {
       setThumbnailPriority(100);
       return;
     }

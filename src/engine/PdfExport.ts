@@ -80,11 +80,21 @@ export function runPdfExport(
     const fail = () => finish(() => reject(exportFailure()));
     const abort = () => finish(() => reject(exportCancelled()));
     options.signal?.addEventListener('abort', abort, { once: true });
-    worker.onmessage = ({ data }: MessageEvent<PdfExportResponse>) => {
+    if (options.signal?.aborted) {
+      abort();
+      return;
+    }
+    worker.onmessage = ({ data }: MessageEvent<PdfExportResponse | null>) => {
       if (settled) return;
-      if (data.type === 'progress') options.onProgress?.(data.progress);
-      else if (data.type === 'result') finish(() => resolve(data.bytes));
-      else fail();
+      if (data?.type === 'progress' && data.progress &&
+          Number.isFinite(data.progress.completed) && Number.isFinite(data.progress.total)) {
+        try { options.onProgress?.(data.progress); }
+        catch { fail(); }
+      } else if (data?.type === 'result' && data.bytes instanceof ArrayBuffer) {
+        finish(() => resolve(data.bytes));
+      } else {
+        fail();
+      }
     };
     worker.onerror = event => { event.preventDefault(); fail(); };
     worker.onmessageerror = fail;

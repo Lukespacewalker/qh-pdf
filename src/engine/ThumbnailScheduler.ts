@@ -9,6 +9,7 @@ interface Job {
   priority: number;
   sequence: number;
   state: JobState;
+  consumerSettled: boolean;
   run: () => Promise<unknown>;
   resolve: (value: unknown) => void;
   reject: (error: unknown) => void;
@@ -38,6 +39,7 @@ export class ThumbnailScheduler {
       priority,
       sequence: this.sequence++,
       state: 'queued',
+      consumerSettled: false,
       run,
       resolve: value => resolve(value as T),
       reject,
@@ -48,11 +50,15 @@ export class ThumbnailScheduler {
     return {
       promise,
       cancel: () => {
-        if (job.state === 'settled') return;
-        if (job.state === 'active') this.active -= 1;
-        job.state = 'settled';
+        if (job.state === 'settled' || job.consumerSettled) return;
+        job.consumerSettled = true;
         job.reject(cancelled());
-        this.pump();
+        if (job.state === 'queued') {
+          job.state = 'settled';
+          const index = this.queue.indexOf(job);
+          if (index >= 0) this.queue.splice(index, 1);
+          this.pump();
+        }
       },
     };
   }
@@ -60,7 +66,7 @@ export class ThumbnailScheduler {
   private pump() {
     this.queue.sort((left, right) => right.priority - left.priority || left.sequence - right.sequence);
     while (this.active < this.concurrency) {
-      const job = this.queue.find(candidate => candidate.state === 'queued');
+      const job = this.queue.shift();
       if (!job) return;
       job.state = 'active';
       this.active += 1;
@@ -81,7 +87,10 @@ export class ThumbnailScheduler {
     if (job.state !== 'active') return;
     job.state = 'settled';
     this.active -= 1;
-    complete();
+    if (!job.consumerSettled) {
+      job.consumerSettled = true;
+      complete();
+    }
     this.pump();
   }
 }

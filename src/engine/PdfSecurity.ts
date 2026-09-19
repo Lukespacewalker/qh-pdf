@@ -31,14 +31,21 @@ function runJob(request: SecurityRequest, signal?: AbortSignal): Promise<ArrayBu
       finish(() => reject(new AppError(failureCode, 'The PDF password operation timed out. Your workspace is still here.')));
     }, 60_000);
     signal?.addEventListener('abort', abort, { once: true });
-    worker.onmessage = ({ data }: MessageEvent<SecurityResponse>) => {
-      finish(() => {
-        if (data.ok) resolve(data.bytes);
-        else reject(new AppError(data.code, data.message));
-      });
-    };
+    if (signal?.aborted) {
+      abort();
+      return;
+    }
     const failed = () => {
       finish(() => reject(new AppError(failureCode, 'The PDF password operation failed. Your workspace is still here.')));
+    };
+    worker.onmessage = ({ data }: MessageEvent<SecurityResponse | null>) => {
+      if (data?.ok === true && data.bytes instanceof ArrayBuffer) {
+        finish(() => resolve(data.bytes));
+      } else if (data?.ok === false && typeof data.code === 'string' && typeof data.message === 'string') {
+        finish(() => reject(new AppError(data.code, data.message)));
+      } else {
+        failed();
+      }
     };
     worker.onerror = event => { event.preventDefault(); failed(); };
     worker.onmessageerror = failed;
