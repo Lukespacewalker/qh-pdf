@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:browser": "playwright test",
+    "bench:large-documents": "npm run build && playwright test --config=playwright.performance.config.ts",
     "test:hosting": "playwright test --config=playwright.hosting.config.ts",
     "deploy": "npm run build && wrangler deploy"
   },
