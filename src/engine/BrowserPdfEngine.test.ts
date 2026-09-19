@@ -7,6 +7,10 @@ import type { WorkspacePage } from '../domain/workspace';
 // below create, write and reopen real PDFs using the real pdf-lib engine.
 vi.mock('pdfjs-dist', () => ({ getDocument: vi.fn(), GlobalWorkerOptions: {} }));
 vi.mock('pdfjs-dist/build/pdf.worker.min.mjs?url', () => ({ default: '/test-worker.mjs' }));
+vi.mock('./PdfExport', async () => {
+  const { runPdfExportInProcess } = await import('./test/runPdfExportInProcess');
+  return { runPdfExport: runPdfExportInProcess };
+});
 import { BrowserPdfEngine } from './BrowserPdfEngine';
 
 async function source(id: string, widths: number[], rotation = 0): Promise<ImportedDocument> {

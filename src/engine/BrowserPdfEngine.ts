@@ -1,10 +1,10 @@
-import { PDFDocument, degrees } from 'pdf-lib';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { PdfEngine, ImportedDocument, PdfPasswordOptions } from './PdfEngine';
 import type { WorkspaceState } from '../domain/workspace';
 import { AppError } from '../errors/AppError';
 import { newId } from '../lib/ids';
+import { runPdfExport } from './PdfExport';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 const accepted = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
@@ -95,57 +95,12 @@ export class BrowserPdfEngine implements PdfEngine {
 
   async exportWorkspace(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, options: PdfPasswordOptions = {}): Promise<Blob> {
     try {
-      if (workspace.pages.length === 0) throw new Error('Cannot export an empty workspace');
-      const out = await PDFDocument.create();
-      const cache = new Map<string, PDFDocument>();
-      for (const wp of workspace.pages) {
-        const src = documents.get(wp.sourceDocumentId);
-        if (!src) throw new Error('An export source is missing');
-        if (src.kind === 'pdf') {
-          let pdf = cache.get(src.id);
-          if (!pdf) {
-            pdf = await PDFDocument.load((src.unlockedBytes ?? src.bytes).slice(0));
-            cache.set(src.id, pdf);
-          }
-          if (!Number.isInteger(wp.sourcePageIndex) || wp.sourcePageIndex < 0 || wp.sourcePageIndex >= pdf.getPageCount()) {
-            throw new Error('An export source page is invalid');
-          }
-          const [page] = await out.copyPages(pdf, [wp.sourcePageIndex]);
-          page.setRotation(degrees((page.getRotation().angle + wp.rotation) % 360));
-          out.addPage(page);
-        } else {
-          if (wp.sourcePageIndex !== 0 || !src.pages[0]) throw new Error('Invalid image page');
-          const info = src.pages[0];
-          const page = out.addPage([info.width, info.height]);
-          let embedded;
-          if (src.mimeType === 'image/jpeg') embedded = await out.embedJpg(src.bytes);
-          else if (src.mimeType === 'image/png') embedded = await out.embedPng(src.bytes);
-          else {
-            const bitmap = await createImageBitmap(new Blob([src.bytes], { type: src.mimeType }));
-            const canvas = document.createElement('canvas');
-            try {
-              canvas.width = bitmap.width;
-              canvas.height = bitmap.height;
-              const ctx = canvas.getContext('2d');
-              if (!ctx) throw new Error('Canvas unavailable');
-              ctx.drawImage(bitmap, 0, 0);
-              embedded = await out.embedPng(await (await canvasBlob(canvas)).arrayBuffer());
-            } finally {
-              bitmap.close();
-              canvas.width = 0;
-              canvas.height = 0;
-            }
-          }
-          page.drawImage(embedded, { x: 0, y: 0, width: info.width, height: info.height });
-          page.setRotation(degrees(wp.rotation));
-        }
-      }
-      let bytes = await out.save();
+      let bytes = new Uint8Array(await runPdfExport(documents, workspace));
       if (options.password !== undefined) {
         const { lockPdf } = await import('./PdfSecurity');
         bytes = await lockPdf(bytes, options.password);
       }
-      return new Blob([Uint8Array.from(bytes).buffer], { type: 'application/pdf' });
+      return new Blob([bytes.buffer], { type: 'application/pdf' });
     } catch {
       throw new AppError('export-failed', 'We couldn’t create the PDF. Your workspace is still here.');
     }
