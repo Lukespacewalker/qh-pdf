@@ -13,11 +13,36 @@ async function fixture() {
   return { name: 'private-fixture.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await pdf.save()) };
 }
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    const entries: unknown[] = [];
+    (window as unknown as { previewDiagnostics: unknown[] }).previewDiagnostics = entries;
+    let sequence = 0;
+    const log = (...values: unknown[]) => { entries.push([performance.now(), ...values]); if (entries.length > 150) entries.shift(); };
+    const original = HTMLCanvasElement.prototype.toBlob;
+    HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
+      const id = ++sequence;
+      log('encode-start', id, this.width, this.height);
+      return original.call(this, blob => { log('encode-end', id); callback(blob); }, type, quality);
+    };
+    const frame = window.requestAnimationFrame;
+    window.requestAnimationFrame = callback => {
+      const id = ++sequence;
+      log('frame-request', id, document.visibilityState);
+      return frame.call(window, time => { log('frame-delivery', id); callback(time); });
+    };
+  });
+});
+test.afterEach(async ({ page }, info) => {
+  const entries = await page.evaluate(() => (window as unknown as { previewDiagnostics?: unknown[] }).previewDiagnostics ?? []);
+  console.log(`PREVIEW_DIAGNOSTICS ${info.title}: ${JSON.stringify(entries)}`);
+  await info.attach('preview-diagnostics.json', { body: JSON.stringify(entries), contentType: 'application/json' });
+});
+
 test('selected encrypted output keeps page order and worker traffic remains same-origin', async ({ page, context }, info) => {
   const origin = new URL(String(info.project.use.baseURL)).origin;
   const violations: string[] = [];
   const paths: string[] = [];
-  // Context-level observation also includes requests initiated by Workers.
   context.on('request', request => {
     const url = new URL(request.url());
     if (!['http:', 'https:'].includes(url.protocol)) return;
