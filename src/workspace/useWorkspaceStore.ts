@@ -3,6 +3,7 @@ import {
   appendPages, deletePages, duplicatePages, emptyWorkspace, movePage, reorderPage,
   rotatePages, toggleSelection, type WorkspaceState,
 } from '../domain/workspace';
+import { rangeSelection } from '../domain/selection';
 import { commit, createHistory, redo, undo, type HistoryState } from '../domain/workspaceCommands';
 import type { ImportedDocument } from '../engine/PdfEngine';
 import { newId } from '../lib/ids';
@@ -14,10 +15,14 @@ interface Store {
   history: HistoryState;
   busy: boolean;
   error: string | null;
+  selectionAnchor: string | null;
   addFiles: (files: File[], importDocument: ImportDocument) => Promise<void>;
   restore: (documents: Map<string, ImportedDocument>, workspace: WorkspaceState) => void;
-  select: (id: string, add: boolean) => void;
+  select: (id: string, add: boolean, range?: boolean) => void;
+  selectAll: () => void;
+  clearSelection: () => void;
   rotate: (degrees: 90 | -90) => void;
+  rotatePage: (id: string, degrees: 90 | -90) => void;
   remove: () => void;
   duplicate: () => void;
   move: (id: string, direction: -1 | 1) => void;
@@ -27,8 +32,9 @@ interface Store {
   clearError: () => void;
 }
 export const useWorkspaceStore = create<Store>((set, get) => ({
-  documents: new Map(), history: createHistory(emptyWorkspace()), busy: false, error: null,
+  documents: new Map(), history: createHistory(emptyWorkspace()), busy: false, error: null, selectionAnchor: null,
   async addFiles(files, importDocument) {
+    if (get().busy || !files.length) return;
     set({ busy: true, error: null });
     try {
       const docs: ImportedDocument[] = [];
@@ -43,22 +49,33 @@ export const useWorkspaceStore = create<Store>((set, get) => ({
       }
       set({ documents: map, history: commit(get().history, next), busy: false });
     } catch (error) {
-      set({ busy: false, error: error instanceof ImportCancelled ? null :
-        error instanceof Error ? error.message : 'Import failed' });
+      set({ busy: false, error: error instanceof ImportCancelled ? null : error instanceof Error ? error.message : 'Import failed' });
     }
   },
-  restore(documents, workspace) { set({ documents, history: createHistory(workspace), error: null }); },
-  select(id, add) { set(s => ({ history: { ...s.history, present: toggleSelection(s.history.present, id, add) } })); },
-  rotate(d) { set(s => ({ history: commit(s.history, rotatePages(s.history.present, s.history.present.selectedPageIds, d)) })); },
-  remove() { set(s => ({ history: commit(s.history, deletePages(s.history.present, s.history.present.selectedPageIds)) })); },
-  duplicate() { set(s => ({ history: commit(s.history, duplicatePages(s.history.present, s.history.present.selectedPageIds, newId)) })); },
+  restore(documents, workspace) { set({ documents, history: createHistory(workspace), error: null, selectionAnchor: null }); },
+  select(id, add, range = false) {
+    set(s => {
+      if (!s.history.present.pages.some(page => page.id === id)) return s;
+      return {
+        selectionAnchor: range && s.selectionAnchor ? s.selectionAnchor : id,
+        history: { ...s.history, present: range ? rangeSelection(s.history.present, s.selectionAnchor, id, add) : toggleSelection(s.history.present, id, add) },
+      };
+    });
+  },
+  selectAll() { set(s => ({ selectionAnchor: s.history.present.pages[0]?.id ?? null,
+    history: { ...s.history, present: { ...s.history.present, selectedPageIds: s.history.present.pages.map(page => page.id) } } })); },
+  clearSelection() { set(s => ({ selectionAnchor: null, history: { ...s.history, present: { ...s.history.present, selectedPageIds: [] } } })); },
+  rotate(d) { set(s => s.history.present.selectedPageIds.length ? { history: commit(s.history, rotatePages(s.history.present, s.history.present.selectedPageIds, d)) } : s); },
+  rotatePage(id, d) { set(s => s.history.present.pages.some(page => page.id === id) ? { history: commit(s.history, rotatePages(s.history.present, [id], d)) } : s); },
+  remove() { set(s => s.history.present.selectedPageIds.length ? { history: commit(s.history, deletePages(s.history.present, s.history.present.selectedPageIds)) } : s); },
+  duplicate() { set(s => s.history.present.selectedPageIds.length ? { history: commit(s.history, duplicatePages(s.history.present, s.history.present.selectedPageIds, newId)) } : s); },
   move(id, d) {
     set(s => { const next = movePage(s.history.present, id, d); return next === s.history.present ? s : { history: commit(s.history, next) }; });
   },
   reorder(id, targetId) {
     set(s => { const next = reorderPage(s.history.present, id, targetId); return next === s.history.present ? s : { history: commit(s.history, next) }; });
   },
-  undo() { set(s => ({ history: undo(s.history) })); },
-  redo() { set(s => ({ history: redo(s.history) })); },
+  undo() { set(s => ({ history: undo(s.history), selectionAnchor: null })); },
+  redo() { set(s => ({ history: redo(s.history), selectionAnchor: null })); },
   clearError() { set({ error: null }); },
 }));

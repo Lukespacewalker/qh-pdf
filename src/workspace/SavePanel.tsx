@@ -1,25 +1,31 @@
 import { useState } from 'react';
 
-export function SavePanel({ count, locked, exporting, onSave }: {
-  count: number; locked: boolean; exporting: boolean; onSave: (password?: string) => Promise<boolean>;
+export function SavePanel({ count, selectedCount, locked, exporting, onSave }: {
+  count: number; selectedCount: number; locked: boolean; exporting: boolean;
+  onSave: (password?: string, selectedOnly?: boolean) => Promise<boolean>;
 }) {
   const [protect, setProtect] = useState(false);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
-  async function submit() {
+  async function submit(selectedOnly = false) {
     setError('');
+    if (locked || (selectedOnly && !selectedCount)) return;
     if (protect && (!password || password.includes('\0') || new TextEncoder().encode(password).length > 127)) {
       setError('Enter a password up to 127 UTF-8 bytes (roughly 127 English characters).'); return;
     }
     if (protect && password !== confirm) { setError('The passwords do not match.'); return; }
-    if (await onSave(protect ? password : undefined)) { setPassword(''); setConfirm(''); }
+    if (await onSave(protect ? password : undefined, selectedOnly)) { setPassword(''); setConfirm(''); }
   }
   return <section className="save-panel" aria-labelledby="save-title">
     <div className="save-summary"><div><h2 id="save-title">Ready to save?</h2>
       <p>Download all {count} {count === 1 ? 'page' : 'pages'} in the order shown.</p></div>
-      <button className="btn primary" disabled={locked} onClick={() => void submit()}>{exporting ? 'Creating PDF…' : 'Save PDF'}</button>
+      <div className="save-buttons">
+        <button className="btn" disabled={locked || !selectedCount} onClick={() => void submit(true)} aria-describedby="selected-save-note">Save selected pages</button>
+        <button className="btn primary" disabled={locked} onClick={() => void submit()}>{exporting ? 'Creating PDF…' : 'Save PDF'}</button>
+      </div>
     </div>
+    <p id="selected-save-note" className="selected-save-note">{selectedCount ? `${selectedCount} selected. Save selected pages creates a separate PDF without removing any pages here.` : 'Select pages to download just those pages.'}</p>
     <label className="check-label"><input type="checkbox" checked={protect} disabled={locked}
       onChange={event => { setProtect(event.target.checked); setPassword(''); setConfirm(''); setError(''); }} />Require a password to open the saved PDF</label>
     {protect ? <div className="password-fields">

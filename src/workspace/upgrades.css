@@ -1,0 +1,44 @@
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.page-card-actions { display: flex; align-items: center; gap: 8px; }
+.page-card-actions .drag-handle { flex: 1; }
+.page-checkbox { display: grid; place-items: center; min-width: 44px; min-height: 44px; cursor: pointer; }
+.page-checkbox input { width: 20px; height: 20px; accent-color: var(--primary); }
+.thumbnail-placeholder { color: var(--secondary); font-size: 12px; padding: 32px 8px; }
+.preview .num { z-index: 1; }
+.mini .preview-open { flex: 2; }
+.selection-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+.selection-tools p { color: var(--secondary); margin: 0; font-size: 13px; }
+.save-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.selected-save-note { color: var(--secondary); font-size: 13px; line-height: 1.5; margin: 0 0 18px; }
+.export-progress { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); z-index: 30; width: min(560px, calc(100% - 32px)); display: flex; gap: 16px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); padding: 18px; }
+.export-progress .progress-message { flex: 1; min-width: 0; }
+.export-progress p { margin: 6px 0 0; font-size: 13px; color: var(--secondary); }
+.export-progress progress { display: block; width: 100%; margin-top: 10px; accent-color: var(--primary); }
+.page-preview-dialog { width: min(1000px, calc(100% - 24px)); max-height: calc(100dvh - 24px); padding: 20px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.page-preview-dialog::backdrop { background: rgba(16, 39, 31, .65); }
+.preview-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.preview-dialog-header h2 { margin: 0; font-size: 22px; }
+.preview-navigation { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.preview-navigation output { min-width: 46px; text-align: center; }
+.full-preview-stage { height: min(62dvh, 700px); min-height: 180px; overflow: auto; background: var(--muted); border-radius: 10px; padding: 8px; }
+.full-preview-canvas { margin: 0 auto; }
+.full-preview-canvas img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.preview-dialog-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 12px; }
+.preview-dialog-footer > span { font-size: 12px; color: var(--secondary); }
+.preview-dialog-footer > div { display: flex; gap: 8px; }
+@media (max-width: 720px) {
+  .save-summary { flex-wrap: wrap; }
+  .save-buttons { width: 100%; }
+  .save-buttons .btn { flex: 1; }
+  .page-preview-dialog { padding: 14px; }
+  .preview-navigation { gap: 6px; }
+  .preview-navigation .btn { min-height: 44px; padding: 8px 10px; }
+  .preview-navigation .spacer { flex-basis: 100%; }
+  .full-preview-stage { height: 52dvh; }
+  .selection-tools { align-items: flex-start; }
+  .export-progress { padding: 14px; }
+}
+@media (max-width: 480px) {
+  .save-buttons { flex-direction: column; }
+  .save-buttons .btn { width: 100%; min-height: 48px; }
+}
