@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Quack &amp; Honk PDF</title>
+  <path fill="#54796C" d="M5 22a5 5 0 0 1 5-5h21v17c0 9 5 14 14 18 6 3 11 6 14 9-17-1-31-3-40-7C10 50 5 43 5 33Z"/>
+  <path fill="#F7EFDF" d="M27 7h16l14 14v20c0 8 1 14 2 20-8-6-16-8-22-11-10-5-15-12-15-21V12a5 5 0 0 1 5-5Z"/>
+  <path fill="#B94D30" d="M43 7v9a5 5 0 0 0 5 5h9Z"/>
+</svg>

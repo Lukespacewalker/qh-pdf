@@ -43,6 +43,28 @@ test('all six locally served mascot files decode and the empty state uses a real
   }
 });
 
+test('the page advertises a decodable same-origin app icon', async ({ page }) => {
+  await page.goto('/');
+  const iconLink = page.locator('link[rel="icon"]');
+  expect(await iconLink.count()).toBe(1);
+  const href = await iconLink.getAttribute('href');
+  expect(href).toBeTruthy();
+
+  const icon = await page.evaluate(async href => {
+    const url = new URL(href!, window.location.href);
+    const image = new Image();
+    image.src = url.href;
+    await image.decode();
+    return {
+      sameOrigin: url.origin === window.location.origin,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+    };
+  }, href);
+
+  expect(icon).toEqual({ sameOrigin: true, width: 64, height: 64 });
+});
+
 test('real PDF previews and edited export preserve order, duplicate pages and source rotation', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
