@@ -1,4 +1,4 @@
-import { PDFDocument, degrees, type PDFImage } from 'pdf-lib';
+import { PDFDocument, degrees, type PDFImage, type PDFPage } from 'pdf-lib';
 import type { PdfExportDocument, PdfExportRequest } from './PdfExportProtocol';
 
 async function embedImage(out: PDFDocument, source: PdfExportDocument): Promise<PDFImage> {
@@ -27,6 +27,11 @@ export async function assemblePdf(
   const sources = new Map(request.documents.map(source => [source.id, source]));
   const pdfCache = new Map<string, PDFDocument>();
   const imageCache = new Map<string, PDFImage>();
+  const copiedPdfPages = new Map<number, PDFPage>();
+  const pdfGroups = new Map<string, {
+    pdf: PDFDocument;
+    entries: { outputIndex: number; sourcePageIndex: number; rotation: number }[];
+  }>();
 
   for (let index = 0; index < request.pages.length; index += 1) {
     const workspacePage = request.pages[index];
@@ -43,11 +48,44 @@ export async function assemblePdf(
           workspacePage.sourcePageIndex >= pdf.getPageCount()) {
         throw new Error('An export source page is invalid');
       }
-      const [page] = await output.copyPages(pdf, [workspacePage.sourcePageIndex]);
-      page.setRotation(degrees((page.getRotation().angle + workspacePage.rotation) % 360));
-      output.addPage(page);
+      // pdf-lib creates a fresh object copier for every copyPages call. Batch
+      // each source/rotation combination so shared resource graphs are copied
+      // once instead of once per page. Separate rotation groups keep duplicate
+      // source pages independently rotatable without re-copying every page.
+      const groupKey = `${source.id}:${workspacePage.rotation}`;
+      let group = pdfGroups.get(groupKey);
+      if (!group) {
+        group = { pdf, entries: [] };
+        pdfGroups.set(groupKey, group);
+      }
+      group.entries.push({
+        outputIndex: index,
+        sourcePageIndex: workspacePage.sourcePageIndex,
+        rotation: workspacePage.rotation,
+      });
     } else {
       if (workspacePage.sourcePageIndex !== 0 || !source.pages[0]) throw new Error('Invalid image page');
+    }
+  }
+
+  for (const { pdf, entries } of pdfGroups.values()) {
+    const pages = await output.copyPages(pdf, entries.map(entry => entry.sourcePageIndex));
+    for (let index = 0; index < pages.length; index += 1) {
+      const page = pages[index];
+      const entry = entries[index];
+      page.setRotation(degrees((page.getRotation().angle + entry.rotation) % 360));
+      copiedPdfPages.set(entry.outputIndex, page);
+    }
+  }
+
+  for (let index = 0; index < request.pages.length; index += 1) {
+    const workspacePage = request.pages[index];
+    const source = sources.get(workspacePage.sourceDocumentId)!;
+    if (source.kind === 'pdf') {
+      const page = copiedPdfPages.get(index);
+      if (!page) throw new Error('An export source page is invalid');
+      output.addPage(page);
+    } else {
       const dimensions = source.pages[0];
       let image = imageCache.get(source.id);
       if (!image) {

@@ -7,7 +7,16 @@ export default function App() {
 
   return <div>
     <header className="topbar">
-      <div className="brand">🦆 Quack & Honk PDF</div>
+      <a
+        className="brand brand-link"
+        href="https://quackandhonk.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Visit Quack & Honk (opens in a new tab)"
+      >
+        <span aria-hidden="true">🦆 Quack & Honk PDF</span>
+        <span className="external-mark" aria-hidden="true">↗</span>
+      </a>
       <div className="sub">Runs in your browser</div>
     </header>
     <WorkspaceScreen engine={engine} />

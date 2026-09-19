@@ -31,6 +31,11 @@ async function expectThumbnails(page: Page, count: number) {
 
 test('all six locally served mascot files decode and the empty state uses a real image', async ({ page }) => {
   await page.goto('/');
+  const brandLink = page.getByRole('link', { name: 'Visit Quack & Honk (opens in a new tab)', exact: true });
+  await expect(brandLink).toBeVisible();
+  await expect(brandLink).toHaveAttribute('href', 'https://quackandhonk.com');
+  await expect(brandLink).toHaveAttribute('target', '_blank');
+  await expect(brandLink).toHaveAttribute('rel', 'noopener noreferrer');
   await expect(page.getByText('Runs in your browser', { exact: true })).toBeVisible();
   await expect(page.getByText('Private · Browser-based', { exact: true })).toHaveCount(0);
   await expect.poll(() => page.locator('.mascot').evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
@@ -180,6 +185,7 @@ test('reports invalid input and allows recovery', async ({ page }) => {
 test('mobile viewport has no horizontal overflow and supports non-drag editing', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Visit Quack & Honk (opens in a new tab)', exact: true })).toBeInViewport();
   await expect(page.getByRole('button', { name: 'Choose files', exact: true })).toBeInViewport();
   await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

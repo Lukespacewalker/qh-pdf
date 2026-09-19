@@ -411,6 +411,49 @@
 
   Review the complete branch against this plan and the approved design, with special attention to the five Review focus cases. Fix Critical/Important findings with a failing regression test first. Record Minor findings in the execution ledger.
 
-- [ ] **Step 7: Prepare but do not deploy**
+- [ ] **Step 7: Prepare but do not deploy** *(superseded)*
 
   Push the scoped branch and open a PR only after final verification. Attach the PR to this task. Deployment and live-production tests require separate explicit authorization.
+
+  Superseded on 2026-09-19 when the repository owner explicitly authorized testing the supplied local 293.6 MiB real-world PDF, merging this PR to `main`, configuring CI/CD, and deploying to `pdf.quackandhonk.com`. The document must remain local and must not be copied into the repository, CI artifacts, or any external service.
+
+### Task 6: Brand discovery and authorized production release
+
+**Files:**
+- Modify: `src/app/App.tsx`
+- Modify: `src/index.css`
+- Modify: `e2e/workspace.spec.ts`
+- Create: `.github/workflows/deploy.yml`
+- Modify: `README.md`
+- Modify: `plan/2026-09-19-product-roadmap-checklist.md`
+
+**Release constraints:**
+- The supplied real-world PDF is local-only test input. Report only aggregate timings, page count, output size, responsiveness, and pass/fail state; never commit, upload, or retain the document or exported copy.
+- Keep the primary document task visually dominant. Brand discovery uses the existing header wordmark as a clear external link rather than adding a tall promotional banner.
+- The link opens `https://quackandhonk.com` in a new tab with an accessible external-link label and `noopener noreferrer`.
+- CI deploys only after the required verification workflow succeeds on `main`, uses least-privilege repository permissions, a scoped Cloudflare token stored as a GitHub environment secret, serialized production deployments, and a pinned deployment action.
+- Deployment must be followed by the existing live-production Chromium/Cloudflare suite and a direct header/network check.
+
+- [x] **Step 1: Add a failing browser assertion for the brand link**
+
+  Assert the header exposes one visible link to `https://quackandhonk.com`, communicates that it opens a new tab, and remains visible without horizontal overflow at 390 px.
+
+- [x] **Step 2: Implement the restrained linked wordmark**
+
+  Preserve the current product name and mechanism statement. Add only the external-link affordance and focused/hover styling; do not add remote assets or requests.
+
+- [x] **Step 3: Exercise the supplied local document**
+
+  Use a temporary ignored Playwright harness against the production build. Guard all requests so import/edit/export remains same-origin static GET traffic, measure import/first-thumbnail/responsiveness, exercise selection/rotation/duplicate/undo/redo, cancel one export, then complete and validate one full export locally. Delete the temporary export after validation.
+
+- [ ] **Step 4: Add and dry-run production deployment automation**
+
+  Add a `Deploy production` workflow triggered by successful completion of `Verify` on `main` plus manual dispatch. Rebuild in the deployment job, run `wrangler deploy --dry-run`, then publish with the pinned Cloudflare Wrangler action. Configure the Cloudflare account id and scoped API token as GitHub `production` environment secrets; never commit credentials.
+
+- [ ] **Step 5: Re-run final checks on the release revision**
+
+  Run Node 24 `npm test`, `npm run build`, `npm run test:browser`, `npm run test:hosting`, and the full large-document benchmark. Confirm the PR check succeeds after the new commit.
+
+- [ ] **Step 6: Merge, observe CI/CD, and verify production**
+
+  Merge PR #10 into `main`, wait for both verification and production deployment to succeed, then run `QH_PDF_BASE_URL=https://pdf.quackandhonk.com npm run test:hosting`. Confirm the live revision exposes the brand link, required security headers, and no unexpected document/network path.

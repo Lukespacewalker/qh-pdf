@@ -39,6 +39,7 @@ describe('real PDF export', () => {
   });
 
   it('interleaves documents and duplicates pages without changing their dimensions', async () => {
+    const copyPages = vi.spyOn(PDFDocument.prototype, 'copyPages');
     const a = await source('a', [111, 222]);
     const b = await source('b', [333]);
     const result = await engine.exportWorkspace(new Map([[a.id, a], [b.id, b]]), {
@@ -46,6 +47,8 @@ describe('real PDF export', () => {
     });
     const pdf = await PDFDocument.load(await result.arrayBuffer());
     expect(pdf.getPages().map(p => p.getWidth())).toEqual([222, 333, 111, 222]);
+    expect(copyPages).toHaveBeenCalledTimes(2);
+    expect(copyPages.mock.calls.map(([, indices]) => indices)).toEqual([[1, 0, 1], [0]]);
   });
 
   it('rejects a missing source instead of silently dropping a requested page', async () => {

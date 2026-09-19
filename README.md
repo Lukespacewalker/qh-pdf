@@ -69,7 +69,9 @@ npm run test:browser
 npm run test:hosting
 ```
 
-`test:hosting` starts a local Cloudflare runtime and exercises the same synthetic document workflows plus HTTP security headers. It does not deploy. With an authenticated Cloudflare account that owns the domain, `npm run deploy` builds and publishes the static app and configures its custom domain. Deployment is manual; the GitHub verification workflow has read-only permissions and does not publish.
+`test:hosting` starts a local Cloudflare runtime and exercises the same synthetic document workflows plus HTTP security headers. It does not deploy. With an authenticated Cloudflare account that owns the domain, `npm run deploy` remains available for an explicitly authorized manual release.
+
+Production CI/CD is defined in `.github/workflows/deploy.yml`. A successful `Verify` run for `main` triggers a serialized deployment from that exact verified commit. The job repeats unit/build checks, validates the Wrangler package with `deploy --dry-run`, publishes through the pinned Cloudflare Wrangler action using credentials scoped to the GitHub `production` environment, and then runs the Chromium/Cloudflare suite against `https://pdf.quackandhonk.com`. Manual dispatch uses the same guarded job. Pull requests cannot deploy and receive no production credentials.
 
 To run the hosting checks against the live site explicitly, set `QH_PDF_BASE_URL=https://pdf.quackandhonk.com` in the shell before running `npm run test:hosting`, then unset it. These checks use generated documents and in-browser file inputs; no document upload endpoint is involved.
 
@@ -77,13 +79,15 @@ Static asset requests and storage are free under [Cloudflare's current pricing](
 
 ## Verification
 
-The `Verify` GitHub Actions workflow runs `npm ci`, Vitest domain/export/security tests, a TypeScript/Vite production build, and Chromium workflows against both Vite preview and the local Cloudflare runtime. The hosting suite also checks HTTP security headers. The workflow has read-only repository permissions and does not deploy the app.
+The `Verify` GitHub Actions workflow runs `npm ci`, Vitest domain/export/security tests, a TypeScript/Vite production build, and Chromium workflows against both Vite preview and the local Cloudflare runtime. The hosting suite also checks HTTP security headers. The verification workflow has read-only repository permissions; production publication is a separate environment-gated workflow that runs only after successful verification on `main`.
 
 The export tests create and reopen real PDFs. The browser tests use the production build to exercise real PDF.js previews, page editing, downloads, PDF/image mixing, malformed-input recovery, mascot decoding, cancellable export progress, viewport-gated thumbnails for a 100-page document, and a 390-pixel-wide viewport. Additional tests cover mouse/keyboard/touch reordering, password retries/cancellation, Unicode AES-256 export, encrypted-original persistence, reload recovery, cross-tab conflicts, and failed saving/clearing. PDF fixtures are synthetic, not user documents. Touch coverage is Chromium emulation, not a physical-device or Safari certification.
 
 A request guard checks that the mixed PDF/PNG/JPEG/WebP workflow sends only same-origin, static GET requests without query strings or request bodies. This is evidence for that tested flow, not a complete security audit or a guarantee about every possible document or browser.
 
 The latest status belongs to the commit's CI checks, not to this document. Historical design checklists are targets rather than evidence of completed implementation.
+
+An explicitly authorized local stress test also exercised a 307,905,032-byte, 4,120-page real-world PDF without copying it into the repository or CI. A cold OneDrive/filesystem read took about 216 seconds; a warm import took about 1.2 seconds and the first thumbnail followed in about 0.37 seconds. Complex sampled thumbnails rendered at about 0.4 pages/second. After changing export from one `pdf-lib` `copyPages` call per page to one batch per source/rotation group, an edited full export completed in 21.4 seconds; the prior implementation did not finish within 40 minutes. Poppler reopened the 307,798,679-byte result with all 4,120 pages and the expected first-page rotation. The request guard observed no network violation. Chromium used roughly 2 GiB working set in the pre-fix run, and the final run still sampled a 633 ms maximum frame gap, so these measurements document a desktop stress case rather than a supported universal limit.
 
 ## Privacy and limitations
 
@@ -93,7 +97,7 @@ Password processing uses pinned `pdfstudio` 0.4.0 with QPDF 12.3.2, native QPDF 
 
 This is still a prototype:
 
-- PDF assembly and image embedding use a fresh module worker for each export. Only referenced sources are sent, as transferable copies, so the original buffers remain available for retry, undo and recovery. Progress and cancellation cover assembly; optional password encryption remains isolated in its own cancellable QPDF worker. Copies and retained source buffers mean peak memory is still browser- and device-dependent, and worker isolation does not impose a memory ceiling or guarantee secure memory zeroization.
+- PDF assembly and image embedding use a fresh module worker for each export. PDF pages are copied in batches per source and workspace rotation so shared resource graphs are not recopied page by page. Only referenced sources are sent, as transferable copies, so the original buffers remain available for retry, undo and recovery. Progress and cancellation cover assembly; optional password encryption remains isolated in its own cancellable QPDF worker. Copies and retained source buffers mean peak memory is still browser- and device-dependent, and worker isolation does not impose a memory ceiling or guarantee secure memory zeroization.
 - Thumbnails use a two-job priority scheduler, a 600-pixel viewport margin and browser `content-visibility` containment. Off-screen cards remain in the DOM so drag, keyboard and arrow reorder targets stay stable; this is not true DOM windowing. Import parsing and page-metadata enumeration still run through PDF.js from the UI-side engine and require further measurement for complex documents.
 - The synthetic Chromium benchmark completes 10, 50, 100, 300 and 500 blank-page fixtures and checks cancellation at the largest requested size. That evidence is a regression baseline, not a guarantee that arbitrary 500-page files will fit memory or perform similarly.
 - OCR, Office conversion and full PDF text editing are not supported. Password support covers standard PDF passwords, not certificate-based or third-party DRM security handlers.
