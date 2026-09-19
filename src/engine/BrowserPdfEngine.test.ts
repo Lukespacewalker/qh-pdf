@@ -7,6 +7,10 @@ import type { WorkspacePage } from '../domain/workspace';
 // below create, write and reopen real PDFs using the real pdf-lib engine.
 vi.mock('pdfjs-dist', () => ({ getDocument: vi.fn(), GlobalWorkerOptions: {} }));
 vi.mock('pdfjs-dist/build/pdf.worker.min.mjs?url', () => ({ default: '/test-worker.mjs' }));
+vi.mock('./PdfExport', async () => {
+  const { runPdfExportInProcess } = await import('./test/runPdfExportInProcess');
+  return { runPdfExport: runPdfExportInProcess };
+});
 import { BrowserPdfEngine } from './BrowserPdfEngine';
 
 async function source(id: string, widths: number[], rotation = 0): Promise<ImportedDocument> {
@@ -35,6 +39,7 @@ describe('real PDF export', () => {
   });
 
   it('interleaves documents and duplicates pages without changing their dimensions', async () => {
+    const copyPages = vi.spyOn(PDFDocument.prototype, 'copyPages');
     const a = await source('a', [111, 222]);
     const b = await source('b', [333]);
     const result = await engine.exportWorkspace(new Map([[a.id, a], [b.id, b]]), {
@@ -42,6 +47,8 @@ describe('real PDF export', () => {
     });
     const pdf = await PDFDocument.load(await result.arrayBuffer());
     expect(pdf.getPages().map(p => p.getWidth())).toEqual([222, 333, 111, 222]);
+    expect(copyPages).toHaveBeenCalledTimes(2);
+    expect(copyPages.mock.calls.map(([, indices]) => indices)).toEqual([[1, 0, 1], [0]]);
   });
 
   it('rejects a missing source instead of silently dropping a requested page', async () => {

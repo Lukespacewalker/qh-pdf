@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { unlockPdf } from './PdfSecurity';
+import { lockPdf, unlockPdf } from './PdfSecurity';
 
 class FakeWorker {
   static instances: FakeWorker[] = [];
@@ -61,5 +61,42 @@ describe('password worker lifecycle', () => {
     retry.onmessage!({ data: { ok: false, code: 'password-protected', message: 'Please try again.' } } as MessageEvent);
     await expect(second).rejects.toMatchObject({ code: 'password-protected' });
     expect(retry.terminate).toHaveBeenCalledOnce();
+  });
+
+  it('maps a malformed password-worker response to a safe error', async () => {
+    const pending = unlockPdf(new ArrayBuffer(1), 'test');
+    const rejection = expect(pending).rejects.toMatchObject({ code: 'import-failed' });
+    const worker = FakeWorker.instances[0];
+
+    expect(() => worker.onmessage!({ data: null } as MessageEvent)).not.toThrow();
+    await rejection;
+    expect(worker.terminate).toHaveBeenCalledOnce();
+  });
+
+  it('terminates password encryption when export is cancelled', async () => {
+    const controller = new AbortController();
+    const source = new Uint8Array([1, 2, 3]);
+    const pending = lockPdf(source, 'test', controller.signal);
+    const rejection = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    const worker = FakeWorker.instances[0];
+
+    controller.abort();
+    await rejection;
+
+    expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(new Uint8Array(source)).toEqual(new Uint8Array([1, 2, 3]));
+  });
+
+  it('does not miss password-export abort during listener registration', async () => {
+    let aborted = false;
+    const signal = {
+      get aborted() { return aborted; },
+      addEventListener() { aborted = true; },
+      removeEventListener() {},
+    } as unknown as AbortSignal;
+
+    await expect(lockPdf(new Uint8Array([1, 2, 3]), 'test', signal))
+      .rejects.toMatchObject({ name: 'AbortError' });
+    expect(FakeWorker.instances[0].terminate).toHaveBeenCalledOnce();
   });
 });
