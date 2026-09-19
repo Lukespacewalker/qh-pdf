@@ -1,4 +1,5 @@
 /*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
   Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' blob: data:; connect-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
