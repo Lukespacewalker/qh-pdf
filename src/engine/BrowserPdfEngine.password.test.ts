@@ -5,6 +5,9 @@ import type { ImportedDocument } from './PdfEngine';
 
 // Use the Node-compatible PDF.js renderer and the real local QPDF WASM.
 // Only asset URLs differ from the browser build; encryption is never mocked.
+// Node has no browser Worker, so run its real adapter directly here. Chromium
+// tests exercise the built worker bridge; separate lifecycle tests cover failure.
+vi.mock('./PdfSecurity', () => import('./QpdfAdapter'));
 vi.mock('pdfjs-dist', () => import('pdfjs-dist/legacy/build/pdf.mjs'));
 vi.mock('pdfjs-dist/build/pdf.worker.min.mjs?url', () => ({
   default: new URL('../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs', import.meta.url).href,
@@ -94,6 +97,17 @@ describe('real password-protected PDFs', () => {
     const doc = await engine.importFile(file(bytes));
     expect(doc.encrypted).toBe(true);
     expect((await PDFDocument.load(doc.unlockedBytes!)).getPageCount()).toBe(2);
+  });
+
+  it('accepts either the user or owner password of an AES-128 input', async () => {
+    const bytes = Uint8Array.from(await toolkit.lock(plain, {
+      userPassword: 'reader', ownerPassword: 'owner', keyLength: 128,
+    }));
+    for (const password of ['reader', 'owner']) {
+      const doc = await engine.importFile(file(bytes), { password });
+      expect(doc.encrypted).toBe(true);
+      expect((await PDFDocument.load(doc.unlockedBytes!)).getPageCount()).toBe(2);
+    }
   });
 
   it.each(['', 'prefix\0suffix', 'x'.repeat(128), 'ก'.repeat(43)])('rejects unsafe export password %j', async invalid => {

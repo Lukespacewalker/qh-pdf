@@ -17,6 +17,8 @@ test('lazy password runtime uses only local static assets and real AES-256', asy
     }
   });
   const errors: string[] = [];
+  const workers: string[] = [];
+  page.on('worker', worker => workers.push(new URL(worker.url()).pathname));
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Choose files', exact: true })).toBeVisible();
@@ -52,6 +54,7 @@ test('lazy password runtime uses only local static assets and real AES-256', asy
   const reopened = await PDFDocument.load(new Uint8Array(result.unlocked));
   expect(reopened.getPages().map(p => [p.getWidth(), p.getHeight()])).toEqual([[111, 400]]);
   expect(requests.some(path => /^\/assets\/qpdf-.*\.wasm$/.test(path))).toBe(true);
+  expect(workers.some(path => /^\/assets\/PdfSecurity\.worker-.*\.js$/.test(path))).toBe(true);
   expect(violations).toEqual([]);
   expect(errors).toEqual([]);
 });

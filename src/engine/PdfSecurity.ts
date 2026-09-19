@@ -1,44 +1,46 @@
-import { createPdfToolkit, PdfPasswordError } from 'pdfstudio';
-import wasmUrl from 'pdfstudio/qpdf.wasm?url';
-import { AppError } from '../errors/AppError';
+import { AppError, type AppErrorCode } from '../errors/AppError';
 
-// This entire module is lazy-loaded. Vite emits both JS and WASM as local assets.
-// Only the compiled module is cached: pdfstudio creates a fresh in-memory
-// filesystem per operation, using numbered paths rather than document names.
-let toolkit: ReturnType<typeof createPdfToolkit> | undefined;
-function getToolkit() {
-  toolkit ??= createPdfToolkit({ wasmUrl }).catch(() => {
-    toolkit = undefined;
-    throw new AppError('import-failed', 'The PDF password tool could not start. Please try again.');
+export interface SecurityRequest { operation: 'lock' | 'unlock'; bytes: ArrayBuffer; password: string }
+export type SecurityResponse = { ok: true; bytes: ArrayBuffer } |
+  { ok: false; code: AppErrorCode; message: string };
+
+function runJob(request: SecurityRequest): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    const failureCode = request.operation === 'lock' ? 'export-failed' : 'import-failed';
+    let worker: Worker;
+    try {
+      worker = new Worker(new URL('./PdfSecurity.worker.ts', import.meta.url), { type: 'module' });
+    } catch {
+      reject(new AppError(failureCode, 'The PDF password tool could not start. Please try again.'));
+      return;
+    }
+    const finish = () => { clearTimeout(timeout); worker.terminate(); };
+    const timeout = setTimeout(() => {
+      finish();
+      reject(new AppError(failureCode, 'The PDF password operation timed out. Your workspace is still here.'));
+    }, 60_000);
+    worker.onmessage = ({ data }: MessageEvent<SecurityResponse>) => {
+      finish();
+      if (data.ok) resolve(data.bytes);
+      else reject(new AppError(data.code, data.message));
+    };
+    const failed = () => {
+      finish();
+      reject(new AppError(failureCode, 'The PDF password operation failed. Your workspace is still here.'));
+    };
+    worker.onerror = event => { event.preventDefault(); failed(); };
+    worker.onmessageerror = failed;
+    try { worker.postMessage(request, [request.bytes]); }
+    catch { failed(); }
   });
-  return toolkit;
 }
 
-export async function unlockPdf(bytes: ArrayBuffer, password = ''): Promise<ArrayBuffer> {
-  // Emscripten passes NUL-terminated strings. Never silently use a password prefix.
-  if (password.includes('\0')) {
-    throw new AppError('password-protected', 'This PDF needs a valid password. Please try again.');
-  }
-  try {
-    return Uint8Array.from(await (await getToolkit()).unlock(bytes, { password })).buffer;
-  } catch (error) {
-    if (error instanceof PdfPasswordError) {
-      throw new AppError('password-protected', 'This PDF needs a valid password. Please try again.');
-    }
-    if (error instanceof AppError) throw error;
-    // QPDF diagnostics may contain document metadata. Keep them out of UI/logs.
-    throw new AppError('invalid-pdf', 'We couldn’t unlock this PDF.');
-  }
+// A fresh worker per operation contains parser failures and releases its WASM
+// memory after completion. Copies protect source buffers from transfer detachment.
+export function unlockPdf(bytes: ArrayBuffer, password = ''): Promise<ArrayBuffer> {
+  return runJob({ operation: 'unlock', bytes: bytes.slice(0), password });
 }
 
 export async function lockPdf(bytes: Uint8Array, password: string): Promise<Uint8Array<ArrayBuffer>> {
-  // PDF AES-256 uses at most 127 UTF-8 bytes. Reject truncation and empty passwords
-  // so choosing protection cannot accidentally create a file that opens freely.
-  const length = new TextEncoder().encode(password).length;
-  if (length === 0 || length > 127 || password.includes('\0')) {
-    throw new AppError('export-failed', 'Use a password of 1–127 UTF-8 bytes without a null character.');
-  }
-  return Uint8Array.from(await (await getToolkit()).lock(bytes, {
-    userPassword: password, ownerPassword: password, keyLength: 256,
-  }));
+  return new Uint8Array(await runJob({ operation: 'lock', bytes: Uint8Array.from(bytes).buffer, password }));
 }
