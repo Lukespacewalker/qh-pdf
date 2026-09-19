@@ -1,3 +1,64 @@
-import{create}from'zustand';import{appendPages,deletePages,duplicatePages,emptyWorkspace,movePage,rotatePages,toggleSelection,type WorkspaceState}from'../domain/workspace';import{commit,createHistory,redo,undo,type HistoryState}from'../domain/workspaceCommands';import type{ImportedDocument,PdfEngine}from'../engine/PdfEngine';import{newId}from'../lib/ids';
-interface Store{documents:Map<string,ImportedDocument>;history:HistoryState;busy:boolean;error:string|null;addFiles:(files:File[],engine:PdfEngine)=>Promise<void>;select:(id:string,add:boolean)=>void;rotate:(d:90|-90)=>void;remove:()=>void;duplicate:()=>void;move:(id:string,d:-1|1)=>void;undo:()=>void;redo:()=>void;clearError:()=>void}
-export const useWorkspaceStore=create<Store>((set,get)=>({documents:new Map(),history:createHistory(emptyWorkspace()),busy:false,error:null,async addFiles(files,engine){set({busy:true,error:null});try{const docs=await Promise.all(files.map(f=>engine.importFile(f)));const map=new Map(get().documents);let next=get().history.present;for(const doc of docs){map.set(doc.id,doc);next=appendPages(next,doc.pages.map(p=>({id:newId(),sourceDocumentId:doc.id,sourcePageIndex:p.sourcePageIndex,rotation:0})))}set({documents:map,history:commit(get().history,next),busy:false})}catch(e){set({busy:false,error:e instanceof Error?e.message:'Import failed'})}},select(id,add){set(s=>({history:{...s.history,present:toggleSelection(s.history.present,id,add)}}))},rotate(d){set(s=>({history:commit(s.history,rotatePages(s.history.present,s.history.present.selectedPageIds,d))}))},remove(){set(s=>({history:commit(s.history,deletePages(s.history.present,s.history.present.selectedPageIds))}))},duplicate(){set(s=>({history:commit(s.history,duplicatePages(s.history.present,s.history.present.selectedPageIds,newId))}))},move(id,d){set(s=>({history:commit(s.history,movePage(s.history.present,id,d))}))},undo(){set(s=>({history:undo(s.history)}))},redo(){set(s=>({history:redo(s.history)}))},clearError(){set({error:null})}}));
+import { create } from 'zustand';
+import {
+  appendPages, deletePages, duplicatePages, emptyWorkspace, movePage, reorderPage,
+  rotatePages, toggleSelection, type WorkspaceState,
+} from '../domain/workspace';
+import { commit, createHistory, redo, undo, type HistoryState } from '../domain/workspaceCommands';
+import type { ImportedDocument } from '../engine/PdfEngine';
+import { newId } from '../lib/ids';
+
+export type ImportDocument = (file: File) => Promise<ImportedDocument>;
+export class ImportCancelled extends Error {}
+interface Store {
+  documents: Map<string, ImportedDocument>;
+  history: HistoryState;
+  busy: boolean;
+  error: string | null;
+  addFiles: (files: File[], importDocument: ImportDocument) => Promise<void>;
+  restore: (documents: Map<string, ImportedDocument>, workspace: WorkspaceState) => void;
+  select: (id: string, add: boolean) => void;
+  rotate: (degrees: 90 | -90) => void;
+  remove: () => void;
+  duplicate: () => void;
+  move: (id: string, direction: -1 | 1) => void;
+  reorder: (id: string, targetId: string) => void;
+  undo: () => void;
+  redo: () => void;
+  clearError: () => void;
+}
+export const useWorkspaceStore = create<Store>((set, get) => ({
+  documents: new Map(), history: createHistory(emptyWorkspace()), busy: false, error: null,
+  async addFiles(files, importDocument) {
+    set({ busy: true, error: null });
+    try {
+      const docs: ImportedDocument[] = [];
+      for (const file of files) docs.push(await importDocument(file));
+      const map = new Map(get().documents);
+      let next = get().history.present;
+      for (const doc of docs) {
+        map.set(doc.id, doc);
+        next = appendPages(next, doc.pages.map(page => ({
+          id: newId(), sourceDocumentId: doc.id, sourcePageIndex: page.sourcePageIndex, rotation: 0,
+        })));
+      }
+      set({ documents: map, history: commit(get().history, next), busy: false });
+    } catch (error) {
+      set({ busy: false, error: error instanceof ImportCancelled ? null :
+        error instanceof Error ? error.message : 'Import failed' });
+    }
+  },
+  restore(documents, workspace) { set({ documents, history: createHistory(workspace), error: null }); },
+  select(id, add) { set(s => ({ history: { ...s.history, present: toggleSelection(s.history.present, id, add) } })); },
+  rotate(d) { set(s => ({ history: commit(s.history, rotatePages(s.history.present, s.history.present.selectedPageIds, d)) })); },
+  remove() { set(s => ({ history: commit(s.history, deletePages(s.history.present, s.history.present.selectedPageIds)) })); },
+  duplicate() { set(s => ({ history: commit(s.history, duplicatePages(s.history.present, s.history.present.selectedPageIds, newId)) })); },
+  move(id, d) {
+    set(s => { const next = movePage(s.history.present, id, d); return next === s.history.present ? s : { history: commit(s.history, next) }; });
+  },
+  reorder(id, targetId) {
+    set(s => { const next = reorderPage(s.history.present, id, targetId); return next === s.history.present ? s : { history: commit(s.history, next) }; });
+  },
+  undo() { set(s => ({ history: undo(s.history) })); },
+  redo() { set(s => ({ history: redo(s.history) })); },
+  clearError() { set({ error: null }); },
+}));

@@ -131,6 +131,9 @@ test('reports invalid input and allows recovery', async ({ page }) => {
 test('mobile viewport has no horizontal overflow and supports non-drag editing', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Choose files', exact: true })).toBeInViewport();
+  await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.locator('input[type=file]').setInputFiles(await pdfFile('mobile.pdf', [111, 222]));
   await expectThumbnails(page, 2);
   await page.getByRole('button', { name: 'Move page 2 left', exact: true }).click();
