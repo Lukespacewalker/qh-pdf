@@ -51,7 +51,12 @@ test('brand discovery uses one bottom banner link and a local mascot', async ({ 
   await page.goto('/');
 
   const header = page.locator('header');
-  await expect(header.getByText('🦆 Quack & Honk PDF', { exact: true })).toBeVisible();
+  await expect(header.getByText('Quack & Honk PDF', { exact: true })).toBeVisible();
+  const appIcon = header.locator('img[src$="/app-icon.svg"]');
+  await expect(appIcon).toHaveAttribute('alt', '');
+  await expect.poll(() => appIcon.evaluate(
+    (element: HTMLImageElement) => element.complete && element.naturalWidth > 0,
+  )).toBe(true);
   await expect(header.getByRole('link')).toHaveCount(0);
 
   const banner = page.getByRole('region', { name: 'More from Quack & Honk', exact: true });
@@ -170,7 +175,8 @@ test('mixes PNG, JPEG, WebP and PDF without non-static network requests', async 
     const url = new URL(request.url());
     if (!['http:', 'https:'].includes(url.protocol)) return;
     if (url.origin !== expectedOrigin || request.method() !== 'GET' || url.search ||
-        !(url.pathname === '/' || url.pathname.startsWith('/assets/') || url.pathname.startsWith('/mascots/'))) {
+        !(url.pathname === '/' || url.pathname === '/app-icon.svg' ||
+          url.pathname.startsWith('/assets/') || url.pathname.startsWith('/mascots/'))) {
       violations.push(`${request.method()} ${url.pathname}`);
     }
     if (request.url().includes('private-fixture') || request.postData()) violations.push('Unexpected payload or filename');

@@ -15,7 +15,8 @@ test('protected import retries, cancels safely, and exports a password-protected
     const url = new URL(request.url());
     if (!['http:', 'https:'].includes(url.protocol)) return;
     if (url.origin !== new URL(baseURL).origin || request.method() !== 'GET' || url.search || request.postData() ||
-        !(url.pathname === '/' || url.pathname.startsWith('/assets/') || url.pathname.startsWith('/mascots/'))) violations.push(url.pathname);
+        !(url.pathname === '/' || url.pathname === '/app-icon.svg' ||
+          url.pathname.startsWith('/assets/') || url.pathname.startsWith('/mascots/'))) violations.push(url.pathname);
   });
   const file = await passwordPdf();
   await page.goto('/');

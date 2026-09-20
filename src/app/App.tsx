@@ -7,7 +7,10 @@ export default function App() {
 
   return <div>
     <header className="topbar">
-      <div className="brand">🦆 Quack & Honk PDF</div>
+      <div className="brand">
+        <img className="brand-icon" src={`${import.meta.env.BASE_URL}app-icon.svg`} alt="" />
+        <span>Quack & Honk PDF</span>
+      </div>
       <div className="sub">Runs in your browser</div>
     </header>
     <WorkspaceScreen engine={engine} />
