@@ -12,7 +12,8 @@ test('lazy password runtime uses only local static assets and real AES-256', asy
     if (!['http:', 'https:'].includes(url.protocol)) return;
     requests.push(url.pathname);
     if (url.origin !== origin || request.method() !== 'GET' || url.search || request.postData() ||
-        !(url.pathname === '/' || url.pathname.startsWith('/assets/') || url.pathname.startsWith('/mascots/'))) {
+        !(url.pathname === '/' || url.pathname === '/app-icon.svg' ||
+          url.pathname.startsWith('/assets/') || url.pathname.startsWith('/mascots/'))) {
       violations.push(`${request.method()} ${url.pathname}`);
     }
   });
