@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, pointerWithin, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { MascotState } from '../brand/MascotState';
+import { BrandBanner } from '../brand/BrandBanner';
 import type { ExportProgress, PdfEngine } from '../engine/PdfEngine';
 import { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
 import { RecoveryPanel } from '../recovery/RecoveryPanel';
@@ -169,6 +170,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
       </>}
     </div>
     <RecoveryPanel importDocument={importDocument} locked={locked || Boolean(activePage)} onRestoring={setRestoring} onPending={setRecoveryPending} />
+    <BrandBanner />
     {fileInput}{passwordDialog}
   </main>;
 }
