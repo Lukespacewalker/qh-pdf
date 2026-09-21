@@ -40,12 +40,14 @@ Real-document evidence: the supplied 307,905,032-byte PDF contained 4,120 pages.
 
 ## P1 — Full-page preview
 
-- [ ] Define preview navigation, focus return, Escape behavior, zoom limits, and mobile layout.
-- [ ] Open the selected page in a large modal/dialog without changing selection accidentally.
-- [ ] Support previous/next page navigation and `Page N / M` status.
-- [ ] Render a higher-resolution page only while focused and release its resources on close/navigation.
-- [ ] Keep rotate actions accessible from preview and reflected in the grid.
-- [ ] Test keyboard-only use, focus trapping/return, reduced motion, and 390px layout.
+- [x] Define preview navigation, focus return, Escape behavior, zoom limits, and mobile layout.
+- [x] Open a page in a large modal/dialog without changing selection accidentally.
+- [x] Support previous/next page navigation and `Page N / M` status.
+- [x] Render a higher-resolution page only while focused and release its resources on close/navigation.
+- [x] Keep rotate actions accessible from preview and reflected in the grid.
+- [x] Test keyboard-only use, focus trapping/return, reduced motion, and 390px layout.
+
+Evidence on the feature revision: targeted Vitest cases exercise page-specific undoable rotation, source/workspace rotation composition, raster bounds, source-byte preservation and abort cleanup. Production-build Chromium workflows exercise selection preservation, native-dialog Escape and focus return, navigation, 50–200% zoom, zoomed keyboard scrolling, retry, rapid cancellation and URL disposal, PDF/PNG/JPEG/WebP previews, exported rotation, reduced motion and the 390-pixel layout. The full Node 24 unit, build, browser and local-hosting results are recorded in the ignored implementation report for the revision.
 
 ## P1 — Selection UX
 

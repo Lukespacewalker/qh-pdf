@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PDFDocument, degrees } from 'pdf-lib';
+import { getDocument } from 'pdfjs-dist';
 import type { ImportedDocument } from './PdfEngine';
 import type { WorkspacePage } from '../domain/workspace';
 
@@ -79,5 +80,113 @@ describe('real PDF export', () => {
       expect((await PDFDocument.load(await output.arrayBuffer())).getPageCount()).toBe(1);
     }
     expect(new Uint8Array(doc.bytes)).toEqual(original);
+  });
+});
+
+describe('full-page rendering', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function renderer(width: number, height: number, sourceRotation = 0, renderPromise: Promise<void> = Promise.resolve()) {
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: vi.fn(() => ({ drawImage: vi.fn(), translate: vi.fn(), rotate: vi.fn() })),
+      toBlob: vi.fn((callback: (blob: Blob | null) => void) => callback(new Blob(['preview'], { type: 'image/png' }))),
+    };
+    vi.stubGlobal('document', { createElement: vi.fn(() => canvas) });
+    const cancel = vi.fn();
+    const cleanup = vi.fn();
+    const renderSizes: Array<[number, number]> = [];
+    const page = {
+      cleanup,
+      getViewport: vi.fn(({ scale, rotation = sourceRotation }: { scale: number; rotation?: number }) => {
+        const swapped = ((rotation % 180) + 180) % 180 === 90;
+        return {
+          width: (swapped ? height : width) * scale,
+          height: (swapped ? width : height) * scale,
+          rotation,
+        };
+      }),
+      render: vi.fn(({ canvas: target }: { canvas: { width: number; height: number } }) => {
+        renderSizes.push([target.width, target.height]);
+        return { promise: renderPromise, cancel };
+      }),
+    };
+    const destroy = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(getDocument).mockReturnValue({
+      promise: Promise.resolve({ getPage: vi.fn().mockResolvedValue(page) }),
+      destroy,
+    } as never);
+    return { canvas, page, cancel, cleanup, destroy, renderSizes };
+  }
+
+  it.each([
+    { name: 'portrait', width: 600, height: 900, sourceRotation: 0, rotation: 0 as const, maxWidth: 1_200, maxHeight: 800, expected: [533, 800] },
+    { name: 'landscape', width: 1_200, height: 600, sourceRotation: 0, rotation: 0 as const, maxWidth: 900, maxHeight: 900, expected: [900, 450] },
+    { name: 'long page', width: 100, height: 10_000, sourceRotation: 0, rotation: 0 as const, maxWidth: 5_000, maxHeight: 5_000, expected: [40, 4_096] },
+    { name: 'four-million-pixel cap', width: 1_000, height: 1_000, sourceRotation: 0, rotation: 0 as const, maxWidth: 5_000, maxHeight: 5_000, expected: [2_000, 2_000] },
+    { name: 'source plus workspace rotation', width: 1_200, height: 600, sourceRotation: 90, rotation: 90 as const, maxWidth: 800, maxHeight: 700, expected: [800, 400] },
+  ])('bounds $name rendering while preserving orientation', async ({ width, height, sourceRotation, rotation, maxWidth, maxHeight, expected }) => {
+    const { canvas, cleanup, destroy, renderSizes } = renderer(width, height, sourceRotation);
+    const bytes = Uint8Array.from([1, 2, 3, 4]).buffer;
+    const doc: ImportedDocument = {
+      id: 'preview', fileName: 'preview.pdf', mimeType: 'application/pdf', kind: 'pdf', bytes,
+      pages: [{ sourcePageIndex: 0, width, height }],
+    };
+
+    await engine.renderPage(doc, 0, { maxWidth, maxHeight, rotation });
+
+    expect([canvas.width, canvas.height]).toEqual([0, 0]);
+    expect(renderSizes).toEqual([expected]);
+    expect(cleanup).toHaveBeenCalledOnce();
+    expect(destroy).toHaveBeenCalledOnce();
+    expect(new Uint8Array(bytes)).toEqual(Uint8Array.from([1, 2, 3, 4]));
+    expect((vi.mocked(getDocument).mock.calls.at(-1)![0] as { data: ArrayBuffer }).data).not.toBe(bytes);
+  });
+
+  it('cancels an in-flight PDF.js render and disposes resources on abort', async () => {
+    let rejectRender!: (error: unknown) => void;
+    const renderPromise = new Promise<void>((_, reject) => { rejectRender = reject; });
+    const resources = renderer(600, 900, 0, renderPromise);
+    resources.cancel.mockImplementation(() => rejectRender(new DOMException('cancelled', 'AbortError')));
+    const controller = new AbortController();
+    const request = engine.renderPage({
+      id: 'preview', fileName: 'preview.pdf', mimeType: 'application/pdf', kind: 'pdf',
+      bytes: Uint8Array.from([1]).buffer,
+      pages: [{ sourcePageIndex: 0, width: 600, height: 900 }],
+    }, 0, { maxWidth: 800, maxHeight: 800, rotation: 0, signal: controller.signal });
+
+    await Promise.resolve();
+    await Promise.resolve();
+    controller.abort();
+
+    await expect(request).rejects.toMatchObject({ name: 'AbortError' });
+    expect(resources.cancel).toHaveBeenCalledOnce();
+    expect(resources.cleanup).toHaveBeenCalledOnce();
+    expect(resources.destroy).toHaveBeenCalledOnce();
+    expect([resources.canvas.width, resources.canvas.height]).toEqual([0, 0]);
+  });
+
+  it('destroys an in-flight PDF.js loading task exactly once on abort', async () => {
+    let rejectLoading!: (error: unknown) => void;
+    const loading = new Promise<never>((_, reject) => { rejectLoading = reject; });
+    const canvas = { width: 0, height: 0 };
+    vi.stubGlobal('document', { createElement: vi.fn(() => canvas) });
+    const destroy = vi.fn().mockImplementation(async () => {
+      rejectLoading(new DOMException('cancelled', 'AbortError'));
+    });
+    vi.mocked(getDocument).mockReturnValue({ promise: loading, destroy } as never);
+    const controller = new AbortController();
+    const request = engine.renderPage({
+      id: 'preview', fileName: 'preview.pdf', mimeType: 'application/pdf', kind: 'pdf',
+      bytes: Uint8Array.from([1]).buffer,
+      pages: [{ sourcePageIndex: 0, width: 600, height: 900 }],
+    }, 0, { maxWidth: 800, maxHeight: 800, rotation: 0, signal: controller.signal });
+
+    controller.abort();
+
+    await expect(request).rejects.toMatchObject({ name: 'AbortError' });
+    expect(destroy).toHaveBeenCalledOnce();
+    expect([canvas.width, canvas.height]).toEqual([0, 0]);
   });
 });

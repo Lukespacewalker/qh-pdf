@@ -6,6 +6,7 @@ import { BrandBanner } from '../brand/BrandBanner';
 import type { ExportProgress, PdfEngine } from '../engine/PdfEngine';
 import { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
 import { RecoveryPanel } from '../recovery/RecoveryPanel';
+import { FullPagePreviewDialog } from './FullPagePreviewDialog';
 import { PageCard } from './PageCard';
 import { Capabilities } from './Capabilities';
 import { SavePanel } from './SavePanel';
@@ -30,6 +31,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
   const [restoring, setRestoring] = useState(false);
   const [recoveryPending, setRecoveryPending] = useState(true);
   const [activePage, setActivePage] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ pageId: string; opener: HTMLButtonElement } | null>(null);
   const [done, setDone] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [exportNotice, setExportNotice] = useState('');
@@ -152,7 +154,8 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
               const doc = store.documents.get(page.sourceDocumentId);
               if (!doc) return <div className="notice" role="alert" key={page.id}>The source for page {index + 1} is missing. Undo the last change or add the document again.</div>;
               return <PageCard key={page.id} page={page} index={index} doc={doc} engine={engine}
-                scheduler={thumbnailScheduler} disabled={locked || recoveryPending} last={index === ws.pages.length - 1} />;
+                scheduler={thumbnailScheduler} disabled={locked || recoveryPending} last={index === ws.pages.length - 1}
+                onPreview={(pageId, opener) => setPreview({ pageId, opener })} />;
             })}</section>
           </SortableContext>
           <DragOverlay>{activePage ? <div className="drag-overlay">Moving page {ws.pages.findIndex(page => page.id === activePage) + 1}</div> : null}</DragOverlay>
@@ -171,6 +174,9 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
     </div>
     <RecoveryPanel importDocument={importDocument} locked={locked || Boolean(activePage)} onRestoring={setRestoring} onPending={setRecoveryPending} />
     <BrandBanner />
+    {preview && <FullPagePreviewDialog pageId={preview.pageId} pages={ws.pages} documents={store.documents}
+      engine={engine} opener={preview.opener} onNavigate={pageId => setPreview(current => current ? { ...current, pageId } : null)}
+      onRotate={store.rotatePage} onClose={() => setPreview(null)} />}
     {fileInput}{passwordDialog}
   </main>;
 }

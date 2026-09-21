@@ -33,7 +33,7 @@ test('protected import retries, cancels safely, and exports a password-protected
   await page.locator('input[type=file]').setInputFiles(file);
   await page.getByRole('button', { name: 'Cancel import' }).click();
   await expect(page.locator('article')).toHaveCount(2);
-  await page.locator('article .preview').first().click();
+  await page.locator('article .page-thumbnail').first().click();
   await page.getByRole('button', { name: 'Rotate right' }).click();
   await page.getByRole('button', { name: 'Move page 2 left' }).click();
   await page.getByLabel('Require a password to open the saved PDF').check();
