@@ -18,6 +18,7 @@ interface Store {
   restore: (documents: Map<string, ImportedDocument>, workspace: WorkspaceState) => void;
   select: (id: string, add: boolean) => void;
   rotate: (degrees: 90 | -90) => void;
+  rotatePage: (id: string, degrees: 90 | -90) => void;
   remove: () => void;
   duplicate: () => void;
   move: (id: string, direction: -1 | 1) => void;
@@ -50,6 +51,7 @@ export const useWorkspaceStore = create<Store>((set, get) => ({
   restore(documents, workspace) { set({ documents, history: createHistory(workspace), error: null }); },
   select(id, add) { set(s => ({ history: { ...s.history, present: toggleSelection(s.history.present, id, add) } })); },
   rotate(d) { set(s => ({ history: commit(s.history, rotatePages(s.history.present, s.history.present.selectedPageIds, d)) })); },
+  rotatePage(id, d) { set(s => ({ history: commit(s.history, rotatePages(s.history.present, [id], d)) })); },
   remove() { set(s => ({ history: commit(s.history, deletePages(s.history.present, s.history.present.selectedPageIds)) })); },
   duplicate() { set(s => ({ history: commit(s.history, duplicatePages(s.history.present, s.history.present.selectedPageIds, newId)) })); },
   move(id, d) {

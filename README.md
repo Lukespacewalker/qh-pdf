@@ -35,6 +35,7 @@ It exercises 10, 50, 100, 300 and 500 blank pages by default. Set `QH_PDF_BENCH_
 
 - Import PDF, JPEG, PNG and WebP through the file picker. The empty workspace also accepts file drops.
 - Preview pages, select a page, and use Ctrl/Cmd-click for additive selection.
+- Open any page in a focused preview, move through the workspace, zoom from 50–200%, and rotate the viewed page without changing the selection.
 - Rotate, duplicate, delete, move left/right, undo and redo.
 - Reorder with a visible drag handle using a mouse, touch, or keyboard; arrow buttons remain available.
 - Recover after deleting the last page using the empty-state Undo control.
@@ -45,7 +46,7 @@ It exercises 10, 50, 100, 300 and 500 blank pages by default. Set `QH_PDF_BENCH_
 - Open password-protected PDFs with the supplied password and optionally require a new password on exported PDFs (AES-256).
 - Keep an optional recovery copy in this browser using IndexedDB, then restore it after reopening the page. Recovery is off by default; clearing the copy also turns it off without closing the open workspace.
 
-The welcome screen describes the supported tasks and file types. Page editing controls are separate from the download/password section below the pages. To reorder with the keyboard, focus a page's Drag handle, press Space, use the arrow keys, then press Space to drop or Escape to cancel.
+The welcome screen describes the supported tasks and file types. Page editing controls are separate from the download/password section below the pages. Each page has an explicit Preview button; the preview returns focus to that button when it closes. To reorder with the keyboard, focus a page's Drag handle, press Space, use the arrow keys, then press Space to drop or Escape to cancel.
 
 Recovery stores the original source files and current page edits atomically, not undo history. It retains encrypted originals and asks for their opening password again when restoring; decrypted working bytes and passwords are never persisted. A saved-status indicator reports pending and failed writes. Conflicting writes from another tab are rejected rather than silently replacing that tab's copy. Browser storage is not a backup: unsaved changes, storage eviction, private browsing, device loss or clearing site data can still lose work.
 
@@ -81,7 +82,7 @@ Static asset requests and storage are free under [Cloudflare's current pricing](
 
 The `Verify` GitHub Actions workflow runs `npm ci`, Vitest domain/export/security tests, a TypeScript/Vite production build, and Chromium workflows against both Vite preview and the local Cloudflare runtime. The hosting suite also checks HTTP security headers. The verification workflow has read-only repository permissions; production publication is a separate environment-gated workflow that runs only after successful verification on `main`.
 
-The export tests create and reopen real PDFs. The browser tests use the production build to exercise real PDF.js previews, page editing, downloads, PDF/image mixing, malformed-input recovery, mascot decoding, cancellable export progress, viewport-gated thumbnails for a 100-page document, and a 390-pixel-wide viewport. Additional tests cover mouse/keyboard/touch reordering, password retries/cancellation, Unicode AES-256 export, encrypted-original persistence, reload recovery, cross-tab conflicts, and failed saving/clearing. PDF fixtures are synthetic, not user documents. Touch coverage is Chromium emulation, not a physical-device or Safari certification.
+The export tests create and reopen real PDFs. The browser tests use the production build to exercise real PDF.js thumbnails and focused previews, preview navigation/zoom/rotation/focus return, page editing, downloads, PDF/image mixing, malformed-input recovery, mascot decoding, cancellable export progress, viewport-gated thumbnails for a 100-page document, and a 390-pixel-wide viewport. Additional tests cover rapid preview cancellation and retry, mouse/keyboard/touch reordering, password retries/cancellation, Unicode AES-256 export, encrypted-original persistence, reload recovery, cross-tab conflicts, and failed saving/clearing. PDF fixtures are synthetic, not user documents. Touch coverage is Chromium emulation, not a physical-device or Safari certification.
 
 A request guard checks that the mixed PDF/PNG/JPEG/WebP workflow sends only same-origin, static GET requests without query strings or request bodies. This is evidence for that tested flow, not a complete security audit or a guarantee about every possible document or browser.
 
@@ -99,12 +100,13 @@ This is still a prototype:
 
 - PDF assembly and image embedding use a fresh module worker for each export. PDF pages are copied in batches per source and workspace rotation so shared resource graphs are not recopied page by page. Only referenced sources are sent, as transferable copies, so the original buffers remain available for retry, undo and recovery. Progress and cancellation cover assembly; optional password encryption remains isolated in its own cancellable QPDF worker. Copies and retained source buffers mean peak memory is still browser- and device-dependent, and worker isolation does not impose a memory ceiling or guarantee secure memory zeroization.
 - Thumbnails use a two-job priority scheduler, a 600-pixel viewport margin and browser `content-visibility` containment. Off-screen cards remain in the DOM so drag, keyboard and arrow reorder targets stay stable; this is not true DOM windowing. Import parsing and page-metadata enumeration still run through PDF.js from the UI-side engine and require further measurement for complex documents.
+- Focused previews render only while the dialog is open. Their raster canvas is capped at 4 million pixels and 4096 pixels per dimension, and stale PDF.js loading/render tasks and object URLs are released on navigation, zoom, rotation and close. This bounds the output canvas allocation; it does not bound source-image decoding or whole-PDF parser memory.
 - The synthetic Chromium benchmark completes 10, 50, 100, 300 and 500 blank-page fixtures and checks cancellation at the largest requested size. That evidence is a regression baseline, not a guarantee that arbitrary 500-page files will fit memory or perform similarly.
 - OCR, Office conversion and full PDF text editing are not supported. Password support covers standard PDF passwords, not certificate-based or third-party DRM security handlers.
 - The bundled QPDF version trails upstream releases. Worker timeouts limit parser hangs; hostile-document memory exhaustion remains a limitation. Further parser hardening and dependency upgrades require ongoing review.
 - Editing creates a new PDF. Preservation of interactive forms, signatures, document-level bookmarks, accessibility tags and attachments is not guaranteed.
 - Complex font/CMap and image-decoder cases, malformed-document fuzzing, large-file limits, Safari and Firefox require further validation.
-- Mobile has drag handles and non-drag controls, not first-class multi-page selection. Comprehensive keyboard shortcuts, Thai UI, dark mode and full brand typography remain planned work.
+- Mobile has the focused preview, drag handles and non-drag controls, but not first-class multi-page selection. Comprehensive keyboard shortcuts, Thai UI, dark mode and full brand typography remain planned work.
 - CSS is currently used directly; the planned Tailwind migration has not been done.
 - No security certification, compliance status or universal privacy guarantee is claimed.
 

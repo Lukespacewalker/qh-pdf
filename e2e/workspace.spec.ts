@@ -23,7 +23,7 @@ async function exportPdf(page: Page) {
   return PDFDocument.load(await readFile(path));
 }
 async function expectThumbnails(page: Page, count: number) {
-  const images = page.locator('article .preview img');
+  const images = page.locator('article .page-thumbnail img');
   await expect(images).toHaveCount(count, { timeout: renderTimeout });
   await expect.poll(() => images.evaluateAll(nodes => nodes.every(node => {
     const image = node as HTMLImageElement;
@@ -120,6 +120,173 @@ test('real PDF previews and edited export preserve order, duplicate pages and so
   expect(errors).toEqual([]);
 });
 
+test('full-page preview preserves selection while navigating and restores focus on Escape', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile(
+    'inspect.pdf', Array.from({ length: 12 }, (_, index) => 180 + index * 10),
+  ));
+  await expectThumbnails(page, 12);
+  await page.getByRole('button', { name: 'Select page 1 from inspect.pdf', exact: true }).click();
+  await page.getByRole('button', { name: 'Select page 3 from inspect.pdf', exact: true }).click({ modifiers: ['Control'] });
+  const opener = page.getByRole('button', { name: 'Preview page 2 from inspect.pdf', exact: true });
+  await opener.scrollIntoViewIfNeeded();
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+  await opener.click();
+
+  const dialog = page.getByRole('dialog', { name: 'Page preview', exact: true });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('Page 2 / 12', { exact: true })).toBeVisible();
+  for (let press = 0; press < 12; press += 1) {
+    await page.keyboard.press('Tab');
+    expect(await dialog.evaluate(node => node.contains(document.activeElement))).toBe(true);
+  }
+  await expect(page.locator('article.selected')).toHaveCount(2);
+  await expect(page.locator('article').nth(0)).toHaveClass(/selected/);
+  await expect(page.locator('article').nth(2)).toHaveClass(/selected/);
+
+  await page.keyboard.press('ArrowRight');
+  await expect(dialog.getByText('Page 3 / 12', { exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Previous page', exact: true }).click();
+  await expect(dialog.getByText('Page 2 / 12', { exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  await expect(dialog).not.toBeVisible();
+  await expect(opener).toBeFocused();
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+  await expect(page.locator('article.selected')).toHaveCount(2);
+});
+
+test('full-page preview enforces zoom limits and rotates only the viewed page', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile('rotated-preview.pdf', [200, 300, 400], 90));
+  await expectThumbnails(page, 3);
+  await page.getByRole('button', { name: 'Select page 1 from rotated-preview.pdf', exact: true }).click();
+  await page.getByRole('button', { name: 'Select page 3 from rotated-preview.pdf', exact: true }).click({ modifiers: ['Control'] });
+  await page.getByRole('button', { name: 'Preview page 2 from rotated-preview.pdf', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Page preview', exact: true });
+  const image = dialog.getByRole('img', { name: 'Preview of page 2 from rotated-preview.pdf', exact: true });
+  await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.complete && node.naturalWidth > 260)).toBe(true);
+  await expect(dialog.getByText('100%', { exact: true })).toBeVisible();
+
+  const zoomOut = dialog.getByRole('button', { name: 'Zoom out', exact: true });
+  await zoomOut.click();
+  await zoomOut.click();
+  await expect(dialog.getByText('50%', { exact: true })).toBeVisible();
+  await expect(zoomOut).toBeDisabled();
+  const zoomIn = dialog.getByRole('button', { name: 'Zoom in', exact: true });
+  for (let i = 0; i < 6; i += 1) await zoomIn.click();
+  await expect(dialog.getByText('200%', { exact: true })).toBeVisible();
+  await expect(zoomIn).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Fit page', exact: true }).click();
+  await expect(dialog.getByText('100%', { exact: true })).toBeVisible();
+
+  await dialog.getByRole('button', { name: 'Rotate previewed page right', exact: true }).click();
+  await expect(dialog.getByText('Page 2 / 3', { exact: true })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Close preview', exact: true }).click();
+  await expect(page.locator('article.selected')).toHaveCount(2);
+  await expect(page.locator('article').nth(0).locator('.meta')).not.toContainText('90°');
+  await expect(page.locator('article').nth(1).locator('.meta')).toContainText('90°');
+  await expect(page.locator('article').nth(2).locator('.meta')).not.toContainText('90°');
+
+  const output = await exportPdf(page);
+  expect(output.getPages().map(outputPage => outputPage.getRotation().angle)).toEqual([90, 180, 90]);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(page.locator('article').nth(1).locator('.meta')).not.toContainText('90°');
+});
+
+test('full-page preview discards stale renders during rapid navigation and repeated close', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile('rapid.pdf', [300, 700, 1_100, 1_500]));
+  await expectThumbnails(page, 4);
+  await page.evaluate(() => {
+    const originalCreate = URL.createObjectURL.bind(URL);
+    const originalRevoke = URL.revokeObjectURL.bind(URL);
+    (window as unknown as { previewUrlCounts: { created: number; revoked: number } }).previewUrlCounts = { created: 0, revoked: 0 };
+    URL.createObjectURL = blob => {
+      (window as unknown as { previewUrlCounts: { created: number; revoked: number } }).previewUrlCounts.created += 1;
+      return originalCreate(blob);
+    };
+    URL.revokeObjectURL = url => {
+      (window as unknown as { previewUrlCounts: { created: number; revoked: number } }).previewUrlCounts.revoked += 1;
+      originalRevoke(url);
+    };
+  });
+  const opener = page.getByRole('button', { name: 'Preview page 1 from rapid.pdf', exact: true });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await opener.click();
+    const dialog = page.getByRole('dialog', { name: 'Page preview', exact: true });
+    await dialog.getByRole('button', { name: 'Next page', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Next page', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Zoom in', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Close preview', exact: true }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(opener).toBeFocused();
+  }
+  await opener.click();
+  const settledDialog = page.getByRole('dialog', { name: 'Page preview', exact: true });
+  await expect(settledDialog.getByRole('img', { name: 'Preview of page 1 from rapid.pdf', exact: true })).toBeVisible();
+  await settledDialog.getByRole('button', { name: 'Close preview', exact: true }).click();
+  await expect(settledDialog).not.toBeVisible();
+  expect(errors).toEqual([]);
+  await expect.poll(() => page.evaluate(
+    () => (window as unknown as { previewUrlCounts: { created: number; revoked: number } }).previewUrlCounts.created,
+  )).toBeGreaterThan(0);
+  const urlCounts = await page.evaluate(
+    () => (window as unknown as { previewUrlCounts: { created: number; revoked: number } }).previewUrlCounts,
+  );
+  expect(urlCounts.created).toBeGreaterThan(0);
+  expect(urlCounts.revoked, JSON.stringify(urlCounts)).toBe(urlCounts.created);
+});
+
+test('zoomed preview keeps arrow keys available for horizontal scrolling', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile('wide.pdf', [2_000, 2_100]));
+  await expectThumbnails(page, 2);
+  await page.getByRole('button', { name: 'Preview page 1 from wide.pdf', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Page preview', exact: true });
+  const image = dialog.getByRole('img', { name: 'Preview of page 1 from wide.pdf', exact: true });
+  await expect(image).toBeVisible();
+  for (let i = 0; i < 4; i += 1) await dialog.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  await expect(dialog.getByText('200%', { exact: true })).toBeVisible();
+  const viewport = dialog.getByLabel('Scrollable page preview', { exact: true });
+  await expect.poll(() => viewport.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
+  await viewport.focus();
+  await page.keyboard.press('ArrowRight');
+
+  await expect(dialog.getByText('Page 1 / 2', { exact: true })).toBeVisible();
+  await expect.poll(() => viewport.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
+});
+
+test('full-page preview reports render failure and retries without losing navigation', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile('retry.pdf', [300, 400]));
+  await expectThumbnails(page, 2);
+  await page.evaluate(() => {
+    const canvasPrototype = HTMLCanvasElement.prototype as HTMLCanvasElement & {
+      previewOriginalToBlob?: HTMLCanvasElement['toBlob'];
+    };
+    canvasPrototype.previewOriginalToBlob = HTMLCanvasElement.prototype.toBlob;
+    HTMLCanvasElement.prototype.toBlob = function (callback) { callback(null); };
+  });
+  await page.getByRole('button', { name: 'Preview page 1 from retry.pdf', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Page preview', exact: true });
+  await expect(dialog.getByRole('alert')).toContainText('We couldn’t render this page.');
+  await dialog.getByRole('button', { name: 'Next page', exact: true }).click();
+  await expect(dialog.getByText('Page 2 / 2', { exact: true })).toBeVisible();
+  await expect(dialog.getByRole('alert')).toContainText('We couldn’t render this page.');
+  await page.evaluate(() => {
+    const canvasPrototype = HTMLCanvasElement.prototype as HTMLCanvasElement & {
+      previewOriginalToBlob?: HTMLCanvasElement['toBlob'];
+    };
+    HTMLCanvasElement.prototype.toBlob = canvasPrototype.previewOriginalToBlob!;
+  });
+  await dialog.getByRole('button', { name: 'Retry preview', exact: true }).click();
+  await expect(dialog.getByRole('img', { name: 'Preview of page 2 from retry.pdf', exact: true })).toBeVisible();
+});
+
 test('long export reports progress and can be cancelled without losing the workspace', async ({ page }) => {
   const pageCount = 30;
   let downloads = 0;
@@ -154,13 +321,13 @@ test('large page grids defer off-screen thumbnails while keeping every page edit
     Array.from({ length: pageCount }, (_, index) => 200 + index),
   ));
   await expect(page.locator('article')).toHaveCount(pageCount, { timeout: renderTimeout });
-  await expect(page.locator('article .preview img').first()).toBeVisible({ timeout: renderTimeout });
+  await expect(page.locator('article .page-thumbnail img').first()).toBeVisible({ timeout: renderTimeout });
   await page.waitForTimeout(500);
-  expect(await page.locator('article .preview img').count()).toBeLessThan(50);
+  expect(await page.locator('article .page-thumbnail img').count()).toBeLessThan(50);
 
   const lastCard = page.locator('article').last();
   await lastCard.scrollIntoViewIfNeeded();
-  await expect(lastCard.locator('.preview img')).toBeVisible({ timeout: renderTimeout });
+  await expect(lastCard.locator('.page-thumbnail img')).toBeVisible({ timeout: renderTimeout });
   await page.getByRole('button', { name: 'Select page 100 from many-pages.pdf', exact: true }).click();
   await expect(page.locator('article.selected')).toHaveAttribute('aria-label', 'Page 100 from many-pages.pdf');
   await page.getByRole('button', { name: 'Move page 100 left', exact: true }).click();
@@ -197,6 +364,13 @@ test('mixes PNG, JPEG, WebP and PDF without non-static network requests', async 
   }))];
   await page.locator('input[type=file]').setInputFiles(files);
   await expectThumbnails(page, 4);
+  for (let index = 0; index < files.length; index += 1) {
+    await page.getByRole('button', { name: `Preview page ${index + 1} from ${files[index].name}`, exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Page preview', exact: true });
+    const image = dialog.getByRole('img', { name: `Preview of page ${index + 1} from ${files[index].name}`, exact: true });
+    await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.complete && Math.max(node.naturalWidth, node.naturalHeight) > 500)).toBe(true);
+    await dialog.getByRole('button', { name: 'Close preview', exact: true }).click();
+  }
   const output = await exportPdf(page);
   expect(output.getPages().map(p => [p.getWidth(), p.getHeight()])).toEqual([[111, 400], [40, 50], [40, 50], [40, 50]]);
   expect(violations).toEqual([]);
@@ -208,7 +382,7 @@ test('can undo deleting the final page and import the same file again', async ({
   const file = await pdfFile('single.pdf', [123]);
   await page.locator('input[type=file]').setInputFiles(file);
   await expectThumbnails(page, 1);
-  await page.locator('article .preview').click();
+  await page.locator('article .page-thumbnail').click();
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.locator('article')).toHaveCount(0);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
@@ -228,6 +402,7 @@ test('reports invalid input and allows recovery', async ({ page }) => {
 
 test('mobile viewport has no horizontal overflow and supports non-drag editing', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Choose files', exact: true })).toBeInViewport();
   await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
@@ -238,6 +413,19 @@ test('mobile viewport has no horizontal overflow and supports non-drag editing',
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.locator('input[type=file]').setInputFiles(await pdfFile('mobile.pdf', [111, 222]));
   await expectThumbnails(page, 2);
+  await page.getByRole('button', { name: 'Preview page 1 from mobile.pdf', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Page preview', exact: true });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Close preview', exact: true })).toBeInViewport();
+  const viewport = dialog.getByLabel('Scrollable page preview', { exact: true });
+  await viewport.focus();
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: 'Close preview', exact: true })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(viewport).toBeFocused();
+  expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await dialog.getByRole('button', { name: 'Close preview', exact: true }).click();
   await page.getByRole('button', { name: 'Move page 2 left', exact: true }).click();
   const output = await exportPdf(page);
   expect(output.getPages().map(p => p.getWidth())).toEqual([222, 111]);

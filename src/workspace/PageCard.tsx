@@ -6,8 +6,9 @@ import type { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
 import type { WorkspacePage } from '../domain/workspace';
 import { useWorkspaceStore } from './useWorkspaceStore';
 
-export function PageCard({ page, index, doc, engine, scheduler, disabled, last }: {
+export function PageCard({ page, index, doc, engine, scheduler, disabled, last, onPreview }: {
   page: WorkspacePage; index: number; doc: ImportedDocument; engine: PdfEngine; scheduler: ThumbnailScheduler; disabled: boolean; last: boolean;
+  onPreview: (pageId: string, opener: HTMLButtonElement) => void;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: page.id, disabled });
@@ -66,7 +67,7 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, last }
     style={{ transform: CSS.Transform.toString(transform), transition }} aria-label={`Page ${index + 1} from ${doc.fileName}`}>
     <button ref={setActivatorNodeRef} className="drag-handle" {...attributes} {...listeners}
       aria-label={`Drag page ${index + 1} to reorder`} disabled={disabled}><span aria-hidden="true">⠿</span> Drag</button>
-    <button className="preview" style={{ width: '100%', padding: 0 }}
+    <button className="page-thumbnail" style={{ width: '100%', padding: 0 }}
       aria-label={`Select page ${index + 1} from ${doc.fileName}`}
       disabled={disabled} aria-pressed={selected} onClick={e => select(page.id, e.ctrlKey || e.metaKey)}>
       <span className="num">{index + 1}</span>
@@ -74,6 +75,9 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, last }
       {previewFailed && <span role="status">Preview unavailable</span>}
     </button>
     <div className="meta"><strong title={doc.fileName}>{doc.fileName}</strong><span>{page.rotation ? `${page.rotation}°` : ''}</span></div>
+    <button className="btn page-preview-button" type="button" disabled={disabled}
+      aria-label={`Preview page ${index + 1} from ${doc.fileName}`}
+      onClick={event => onPreview(page.id, event.currentTarget)}>Preview</button>
     <div className="mini">
       <button className="btn" onClick={() => move(page.id, -1)} disabled={disabled || index === 0} aria-label={`Move page ${index + 1} left`}>←</button>
       <button className="btn" onClick={() => move(page.id, 1)} disabled={disabled || last} aria-label={`Move page ${index + 1} right`}>→</button>

@@ -63,7 +63,7 @@ async function installSampler(page: import('@playwright/test').Page) {
     target.__qhBenchmark = state;
 
     const recordDecodedThumbnails = () => {
-      for (const image of document.querySelectorAll<HTMLImageElement>('article .preview img')) {
+      for (const image of document.querySelectorAll<HTMLImageElement>('article .page-thumbnail img')) {
         const pageLabel = image.closest('article')?.getAttribute('aria-label');
         if (!pageLabel || !image.complete || image.naturalWidth === 0) continue;
         state.thumbnailPages.add(pageLabel);
