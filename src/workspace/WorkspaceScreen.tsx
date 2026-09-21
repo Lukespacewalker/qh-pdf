@@ -3,21 +3,22 @@ import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, 
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { MascotState } from '../brand/MascotState';
 import { BrandBanner } from '../brand/BrandBanner';
+import { createSelectedExportWorkspace, type WorkspaceState } from '../domain/workspace';
 import type { ExportProgress, PdfEngine } from '../engine/PdfEngine';
 import { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
 import { RecoveryPanel } from '../recovery/RecoveryPanel';
 import { FullPagePreviewDialog } from './FullPagePreviewDialog';
 import { PageCard } from './PageCard';
 import { Capabilities } from './Capabilities';
-import { SavePanel } from './SavePanel';
+import { SavePanel, type SaveTarget } from './SavePanel';
 import { usePasswordImport } from './usePasswordImport';
 import { useWorkspaceStore } from './useWorkspaceStore';
 
-function download(blob: Blob) {
+function download(blob: Blob, filename: string) {
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   link.href = url;
-  link.download = 'quack-honk-document.pdf';
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -34,6 +35,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
   const [preview, setPreview] = useState<{ pageId: string; opener: HTMLButtonElement } | null>(null);
   const [done, setDone] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const [exportTotal, setExportTotal] = useState(0);
   const [exportNotice, setExportNotice] = useState('');
   const exportJob = useRef<AbortController | null>(null);
   const store = useWorkspaceStore();
@@ -56,22 +58,38 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
     setExportNotice('');
     await store.addFiles(files, importDocument);
   }
-  async function save(password?: string) {
-    if (editLocked || ws.pages.length === 0) return false;
+  async function save(target: SaveTarget, password?: string) {
+    if (editLocked) return false;
+    store.clearError();
+    const current = useWorkspaceStore.getState();
+    let snapshot: WorkspaceState;
+    try {
+      snapshot = target === 'selected'
+        ? createSelectedExportWorkspace(current.history.present)
+        : {
+          pages: current.history.present.pages.map(page => ({ ...page })),
+          selectedPageIds: [...current.history.present.selectedPageIds],
+        };
+    } catch (error) {
+      useWorkspaceStore.setState({ error: error instanceof Error ? error.message : 'Export failed' });
+      return false;
+    }
+    if (snapshot.pages.length === 0) return false;
+    const documents = new Map(current.documents);
     const controller = new AbortController();
     exportJob.current = controller;
     setExporting(true);
     setDone(false);
     setExportNotice('');
-    setExportProgress({ phase: 'assembling', completed: 0, total: ws.pages.length });
-    store.clearError();
+    setExportTotal(snapshot.pages.length);
+    setExportProgress({ phase: 'assembling', completed: 0, total: snapshot.pages.length });
     try {
-      const blob = await engine.exportWorkspace(store.documents, ws, {
+      const blob = await engine.exportWorkspace(documents, snapshot, {
         ...(password === undefined ? {} : { password }),
         signal: controller.signal,
         onProgress: setExportProgress,
       });
-      download(blob);
+      download(blob, target === 'selected' ? 'quack-honk-selected-pages.pdf' : 'quack-honk-document.pdf');
       setDone(true);
       return true;
     } catch (error) {
@@ -95,10 +113,10 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
       event.currentTarget.value = '';
       void add(files);
     }} />;
-  const historyActions = <>
+  const historyActions = <div className="history-tools">
     <button className="btn" onClick={store.undo} disabled={editLocked || !store.history.past.length}>Undo</button>
     <button className="btn" onClick={store.redo} disabled={editLocked || !store.history.future.length}>Redo</button>
-  </>;
+  </div>;
   const error = store.error && <div className="notice" role="alert">{store.error}</div>;
 
   return <main className={`shell workspace-layout ${!ws.pages.length ? 'empty-wrap' : ''}`}>
@@ -124,18 +142,26 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
         <Capabilities />
       </> : <>
         <div className="head">
-          <div><h1>Your document</h1><p className="sub">{ws.pages.length} pages · {selected ? `${selected} selected` : 'Select pages to edit'}</p></div>
+          <div><h1>Your document</h1><p className="sub">{ws.pages.length} pages</p></div>
           <button className="btn" onClick={() => input.current?.click()} disabled={editLocked}>+ Add files</button>
         </div>
         {error}
         <div className="toolbar" role="group" aria-label="Page editing tools">
-          {historyActions}<span className="spacer" />
-          <button className="btn" aria-label="Rotate left" onClick={() => store.rotate(-90)} disabled={editLocked || !selected}>↶ Rotate</button>
-          <button className="btn" aria-label="Rotate right" onClick={() => store.rotate(90)} disabled={editLocked || !selected}>Rotate ↷</button>
-          <button className="btn" onClick={store.duplicate} disabled={editLocked || !selected}>Duplicate</button>
-          <button className="btn danger" onClick={store.remove} disabled={editLocked || !selected}>Delete</button>
+          {historyActions}
+          <div className="selection-tools" role="group" aria-label="Page selection tools">
+            <button className="btn" onClick={store.selectAll} disabled={editLocked || selected === ws.pages.length}>Select all</button>
+            <button className="btn" onClick={store.deselectAll} disabled={editLocked || !selected}>Deselect all</button>
+            <output className="selection-count" role="status" aria-label="Selected pages">{selected} of {ws.pages.length} selected</output>
+          </div>
+          <span className="spacer" />
+          <div className="edit-tools">
+            <button className="btn" aria-label="Rotate left" onClick={() => store.rotate(-90)} disabled={editLocked || !selected}>↶ Rotate</button>
+            <button className="btn" aria-label="Rotate right" onClick={() => store.rotate(90)} disabled={editLocked || !selected}>Rotate ↷</button>
+            <button className="btn" onClick={store.duplicate} disabled={editLocked || !selected}>Duplicate</button>
+            <button className="btn danger" onClick={store.remove} disabled={editLocked || !selected}>Delete</button>
+          </div>
         </div>
-        <p className="arrange-hint">Drag the handle on a page or use its arrows to change the order. Undo is always handy.</p>
+        <p className="arrange-hint">Click a page to select it, use Shift for a range, or Ctrl / Command to add pages. The checkbox adds a page on touch and keyboard. Drag the handle or use arrows to reorder.</p>
         <DndContext sensors={sensors} collisionDetection={args => args.pointerCoordinates ? pointerWithin(args) : closestCenter(args)}
           accessibility={{ announcements: {
             onDragStart: ({ active }) => `Picked up page ${ws.pages.findIndex(page => page.id === active.id) + 1}.`,
@@ -154,17 +180,18 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
               const doc = store.documents.get(page.sourceDocumentId);
               if (!doc) return <div className="notice" role="alert" key={page.id}>The source for page {index + 1} is missing. Undo the last change or add the document again.</div>;
               return <PageCard key={page.id} page={page} index={index} doc={doc} engine={engine}
-                scheduler={thumbnailScheduler} disabled={locked || recoveryPending} last={index === ws.pages.length - 1}
+                scheduler={thumbnailScheduler} disabled={locked || recoveryPending} selectionDisabled={editLocked}
+                last={index === ws.pages.length - 1}
                 onPreview={(pageId, opener) => setPreview({ pageId, opener })} />;
             })}</section>
           </SortableContext>
           <DragOverlay>{activePage ? <div className="drag-overlay">Moving page {ws.pages.findIndex(page => page.id === activePage) + 1}</div> : null}</DragOverlay>
         </DndContext>
-        <SavePanel count={ws.pages.length} locked={editLocked} exporting={exporting} onSave={save} onCancel={cancelExport} />
+        <SavePanel count={ws.pages.length} selectedCount={selected} locked={editLocked} exporting={exporting} onSave={save} onCancel={cancelExport} />
         {exporting && <div className="status" role="status"><MascotState state="working" alt="Quack working" /><div className="export-status">
           <strong>{exportProgress?.phase === 'protecting' ? 'Protecting your PDF…' :
-            `Creating page ${exportProgress?.completed ?? 0} of ${exportProgress?.total ?? ws.pages.length}…`}</strong>
-          <progress aria-label="Creating PDF" max={exportProgress?.total ?? ws.pages.length}
+            `Creating page ${exportProgress?.completed ?? 0} of ${exportProgress?.total ?? exportTotal}…`}</strong>
+          <progress aria-label="Creating PDF" max={exportProgress?.total ?? exportTotal}
             value={exportProgress?.completed ?? 0} />
           <div className="sub">Everything is being processed in this browser.</div>
         </div></div>}

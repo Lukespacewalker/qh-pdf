@@ -51,20 +51,24 @@ Evidence on the feature revision: targeted Vitest cases exercise page-specific u
 
 ## P1 — Selection UX
 
-- [ ] Add Select all and Deselect all.
-- [ ] Add Shift-select contiguous range anchored to the last intentional selection.
-- [ ] Make selected count prominent on desktop and mobile.
-- [ ] Keep Delete, Duplicate, Rotate left, and Rotate right operating on the full selected set.
-- [ ] Preserve Ctrl/Cmd additive selection and define touch behavior without modifier keys.
-- [ ] Test range selection across reordered and duplicated pages plus undo/redo invariants.
+- [x] Add Select all and Deselect all.
+- [x] Add Shift-select contiguous range anchored to the last intentional selection.
+- [x] Make selected count prominent on desktop and mobile.
+- [x] Keep Delete, Duplicate, Rotate left, and Rotate right operating on the full selected set.
+- [x] Preserve Ctrl/Cmd additive selection and define touch behavior without modifier keys.
+- [x] Test range selection across reordered and duplicated pages plus undo/redo invariants.
+
+Evidence on the feature revision: focused domain/store tests cover additive toggles, forward/reverse/additive ranges, ID-based anchors through reorder and duplication, deletion, restore, undo/redo, all/none and invalid-selection cleanup without selection-only history entries. Production-build Chromium workflows exercise the labeled page checkboxes with mouse, keyboard and a 390-pixel touch viewport, live counts, all/none, modifier ranges, selection-preserving preview, and multi-page rotate, duplicate, delete and undo.
 
 ## P1 — Save selected pages
 
-- [ ] Add `Save selected pages` only when at least one page is selected.
-- [ ] Derive an export snapshot without mutating workspace order or selection.
-- [ ] Reuse the same export worker, validation, progress, cancellation, and password flow.
-- [ ] Keep `Save PDF` as the clear all-pages primary action.
-- [ ] Test selected output order, rotations, duplicates, mixed sources, failure, cancellation, and password export.
+- [x] Add `Save selected pages` only when at least one page is selected.
+- [x] Derive an export snapshot without mutating workspace order or selection.
+- [x] Reuse the same export worker, validation, progress, cancellation, and password flow.
+- [x] Keep `Save PDF` as the clear all-pages primary action.
+- [x] Test selected output order, rotations, duplicates, mixed sources, failure, cancellation, and password export.
+
+Evidence on the feature revision: real synthetic outputs are reopened to verify current workspace order after reorder, additive source/workspace rotations, duplicates, mixed PDF/image sources, an encrypted selected subset, and the unchanged all-pages download. Browser workflows also verify subset-specific progress totals, cancellation without a download, worker failure with preserved selection/workspace and successful retry. Domain validation rejects empty, duplicate and stale selected IDs before export.
 
 ## P2 — Bundle and startup work
 

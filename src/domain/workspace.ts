@@ -16,4 +16,49 @@ export function reorderPage(state: WorkspaceState, id: string, targetId: string)
   pages.splice(to, 0, page);
   return { ...state, pages };
 }
-export function toggleSelection(s:WorkspaceState,id:string,additive:boolean):WorkspaceState{if(!additive)return{...s,selectedPageIds:[id]};const set=new Set(s.selectedPageIds);set.has(id)?set.delete(id):set.add(id);return{...s,selectedPageIds:[...set]}}
+export function toggleSelection(s: WorkspaceState, id: string, additive: boolean): WorkspaceState {
+  const validIds = new Set(s.pages.map(page => page.id));
+  const selected = new Set(s.selectedPageIds.filter(selectedId => validIds.has(selectedId)));
+  if (!validIds.has(id)) return { ...s, selectedPageIds: [...selected] };
+  if (!additive) return { ...s, selectedPageIds: [id] };
+  selected.has(id) ? selected.delete(id) : selected.add(id);
+  return { ...s, selectedPageIds: [...selected] };
+}
+
+export function selectPageRange(s: WorkspaceState, anchorId: string, targetId: string, additive: boolean): WorkspaceState {
+  const anchor = s.pages.findIndex(page => page.id === anchorId);
+  const target = s.pages.findIndex(page => page.id === targetId);
+  if (anchor < 0 || target < 0) return s;
+  const [from, to] = anchor < target ? [anchor, target] : [target, anchor];
+  const range = s.pages.slice(from, to + 1).map(page => page.id);
+  if (!additive) return { ...s, selectedPageIds: range };
+  const validIds = new Set(s.pages.map(page => page.id));
+  const selected = new Set(s.selectedPageIds.filter(id => validIds.has(id)));
+  for (const id of range) selected.add(id);
+  return { ...s, selectedPageIds: [...selected] };
+}
+
+export const selectAllPages = (s: WorkspaceState): WorkspaceState => ({
+  ...s, selectedPageIds: s.pages.map(page => page.id),
+});
+export const deselectAllPages = (s: WorkspaceState): WorkspaceState => ({ ...s, selectedPageIds: [] });
+
+export function sanitizeSelection(s: WorkspaceState): WorkspaceState {
+  const validIds = new Set(s.pages.map(page => page.id));
+  const selectedPageIds = [...new Set(s.selectedPageIds.filter(id => validIds.has(id)))];
+  return { ...s, selectedPageIds };
+}
+
+export function createSelectedExportWorkspace(s: WorkspaceState): WorkspaceState {
+  const requested = s.selectedPageIds;
+  const selected = new Set(requested);
+  const validIds = new Set(s.pages.map(page => page.id));
+  if (requested.length === 0 || selected.size !== requested.length || requested.some(id => !validIds.has(id))) {
+    throw new Error('The selected pages are no longer available. Select them again and retry.');
+  }
+  const pages = s.pages.filter(page => selected.has(page.id)).map(page => ({ ...page }));
+  if (pages.length !== selected.size) {
+    throw new Error('The selected pages are no longer available. Select them again and retry.');
+  }
+  return { pages, selectedPageIds: pages.map(page => page.id) };
+}
