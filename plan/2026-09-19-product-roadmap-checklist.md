@@ -72,12 +72,14 @@ Evidence on the feature revision: real synthetic outputs are reopened to verify 
 
 ## P2 — Bundle and startup work
 
-- [ ] Record initial JS/WASM transfer and parsed sizes before changing split points.
-- [ ] Confirm moving `pdf-lib` assembly to the export worker removes it from the initial application path.
-- [ ] Lazy-load PDF.js after the user starts import if measurement shows a useful startup win.
-- [ ] Keep QPDF/pdfstudio lazy and absent unless opening or creating a protected PDF.
-- [ ] Evaluate loading recovery UI/repository after first paint without delaying restore detection.
-- [ ] Compare cold load, warm load, and first interaction; do not hide warnings by raising thresholds.
+- [x] Record initial JS/WASM transfer and decoded sizes before changing split points; keep decoded bytes distinct from JavaScript parse time.
+- [x] Confirm moving `pdf-lib` assembly to the export worker removes it from the initial application path.
+- [x] Lazy-load PDF.js after the user starts an operation that needs it.
+- [x] Keep QPDF/pdfstudio lazy and absent unless opening or creating a protected PDF.
+- [x] Evaluate loading recovery UI/repository after first paint without delaying restore detection; retain eager detection to prevent an import/restore race.
+- [x] Compare cold load, warm load, and first interaction; do not hide warnings by raising thresholds.
+
+Evidence on the feature revision: a matched five-sample Node 24.21.0 / Playwright Chromium 153 production-build benchmark reduced initial JavaScript from 753,587 to 316,617 raw bytes, 230,589 to 99,809 computed gzip bytes, and 193,645 to 86,436 computed Brotli bytes. The first cold Resource Timing sample reported 230,889 to 100,109 transfer bytes, 230,589 to 99,809 encoded-body bytes, and 753,587 to 316,617 decoded-body bytes for the entry module; decoded-body bytes are not parse duration. A direct Vite module-graph report found no `pdfjs-dist`, `pdf-lib` or `pdfstudio` module in the initial static graph, and every cold/warm network sample kept PDF.js, export, security and WASM assets unloaded. PDF.js moved to a dynamic 436,570-byte raw renderer chunk requested with its worker on first PDF use. Median cold enabled-readiness changed from 111.6 to 80.6 ms and warm readiness from 43.2 to 36.9 ms. First PDF import changed from 95.6 to 100.3 ms, first decoded thumbnail from 194.9 to 200.2 ms, and all three thumbnails from 295.8 to 297.1 ms; these small local differences are descriptive rather than claimed improvements. Warning thresholds, recovery schema and security/deployment configuration were unchanged.
 
 ## P2 — Browser and device evidence
 
