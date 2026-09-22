@@ -32,6 +32,7 @@ export interface PdfExportOptions extends PdfPasswordOptions {
   output?: PdfOutputSettings;
   signal?: AbortSignal;
   onProgress?: (progress: ExportProgress) => void;
+  onCompression?: (info: { beforeBytes: number; afterBytes: number }) => void;
 }
 export interface PdfEngine {
   importFile(file: File, options?: PdfPasswordOptions): Promise<ImportedDocument>;

@@ -2,6 +2,7 @@ import { PDFDocument, PDFPage, PDFArray, PDFDict, PDFName, degrees, type PDFImag
 import type { PdfExportDocument, PdfExportRequest } from './PdfExportProtocol';
 import { cropPdfPage } from './cropPdfPage';
 import { assertCrop } from '../domain/crop';
+import { decoratePdf } from './decoratePdf';
 
 function independentPage(page: PDFPage, output: PDFDocument): PDFPage {
   // copyPages shares source objects within a batch, including repeated pages.
@@ -123,5 +124,6 @@ export async function assemblePdf(
     onProgress(index + 1, request.pages.length);
   }
 
+  await decoratePdf(output, request.output ?? {}, request.decorationContext);
   return Uint8Array.from(await output.save()).buffer;
 }

@@ -239,11 +239,20 @@ export class BrowserPdfEngine implements PdfEngine {
   async exportWorkspace(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, options: PdfExportOptions = {}): Promise<Blob> {
     try {
       let bytes = new Uint8Array(await runPdfExport(documents, workspace, options));
+      const level = options.output?.compression;
+      if (level && level !== 'off') {
+        options.onProgress?.({ phase: 'compressing', completed: workspace.pages.length, total: workspace.pages.length });
+        const beforeBytes = bytes.byteLength;
+        const { compressPdf } = await import('./PdfCompression');
+        bytes = await compressPdf(bytes, level, options.signal);
+        options.onCompression?.({ beforeBytes, afterBytes: bytes.byteLength });
+      }
       if (options.password !== undefined) {
         options.onProgress?.({ phase: 'protecting', completed: workspace.pages.length, total: workspace.pages.length });
         const { lockPdf } = await import('./PdfSecurity');
         bytes = await lockPdf(bytes, options.password, options.signal);
       }
+      if (options.signal?.aborted) throw abortError();
       return new Blob([bytes.buffer], { type: 'application/pdf' });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error;
