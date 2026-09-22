@@ -15,6 +15,7 @@ import { usePasswordImport } from './usePasswordImport';
 import { useWorkspaceStore } from './useWorkspaceStore';
 import { CropDialog } from './CropDialog';
 import { workspaceShortcut } from './workspaceShortcut';
+import type { PdfOutputSettings } from '../domain/exportOptions';
 
 function download(blob: Blob, filename: string) {
   const link = document.createElement('a');
@@ -38,6 +39,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
   const [preview, setPreview] = useState<{ pageId: string; opener: HTMLButtonElement } | null>(null);
   const [cropOpener, setCropOpener] = useState<HTMLButtonElement | null>(null);
   const [done, setDone] = useState(false);
+  const [savedBytes, setSavedBytes] = useState(0);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [exportTotal, setExportTotal] = useState(0);
   const [exportNotice, setExportNotice] = useState('');
@@ -80,7 +82,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
     setExportNotice('');
     await store.addFiles(files, importDocument);
   }
-  async function save(target: SaveTarget, password?: string) {
+  async function save(target: SaveTarget, password?: string, output?: PdfOutputSettings) {
     if (editLocked) return false;
     store.clearError();
     const current = useWorkspaceStore.getState();
@@ -110,8 +112,10 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
         ...(password === undefined ? {} : { password }),
         signal: controller.signal,
         onProgress: setExportProgress,
+        output,
       });
       download(blob, target === 'selected' ? 'quack-honk-selected-pages.pdf' : 'quack-honk-document.pdf');
+      setSavedBytes(blob.size);
       setDone(true);
       return true;
     } catch (error) {
@@ -168,6 +172,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
           <button className="btn" onClick={() => input.current?.click()} disabled={editLocked}>+ Add files</button>
         </div>
         {error}
+        <div className="page-editing-region">
         <div className="toolbar" role="group" aria-label="Page editing tools">
           {historyActions}
           <div className="selection-tools" role="group" aria-label="Page selection tools">
@@ -210,16 +215,18 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
           </SortableContext>
           <DragOverlay>{activePage ? <div className="drag-overlay">Moving page {ws.pages.findIndex(page => page.id === activePage) + 1}</div> : null}</DragOverlay>
         </DndContext>
-        <SavePanel count={ws.pages.length} selectedCount={selected} locked={editLocked} exporting={exporting} onSave={save} onCancel={cancelExport} saveButtonRef={saveButton} />
+        </div>
+        <SavePanel count={ws.pages.length} selectedCount={selected} locked={editLocked} exporting={exporting} onSave={save} onCancel={cancelExport} saveButtonRef={saveButton}
+          engine={engine} workspace={ws} documents={store.documents} />
         {exporting && <div className="status" role="status"><MascotState state="working" alt="Quack working" /><div className="export-status">
-          <strong>{exportProgress?.phase === 'protecting' ? 'Protecting your PDF…' :
+          <strong>{exportProgress?.phase === 'protecting' ? 'Protecting your PDF…' : exportProgress?.phase === 'compressing' ? 'Compressing your PDF…' :
             `Creating page ${exportProgress?.completed ?? 0} of ${exportProgress?.total ?? exportTotal}…`}</strong>
           <progress aria-label="Creating PDF" max={exportProgress?.total ?? exportTotal}
             value={exportProgress?.completed ?? 0} />
           <div className="sub">Everything is being processed in this browser.</div>
         </div></div>}
         {exportNotice && <div className="save-complete" role="status">{exportNotice}</div>}
-        {done && <div className="save-complete" role="status"><strong>Your PDF is ready.</strong> Created without uploading your document.</div>}
+        {done && <div className="save-complete" role="status"><strong>Your PDF is ready.</strong> {new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(savedBytes / 1024)} KB · Created without uploading your document.</div>}
       </>}
     </div>
     <RecoveryPanel importDocument={importDocument} locked={locked || Boolean(activePage)} onRestoring={setRestoring} onPending={setRecoveryPending} />

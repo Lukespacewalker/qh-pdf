@@ -1,5 +1,6 @@
 import type { WorkspaceState } from '../domain/workspace';
 import type { CropMargins } from '../domain/crop';
+import type { PdfOutputSettings } from '../domain/exportOptions';
 
 export interface ImportedPageDescriptor { sourcePageIndex: number; width: number; height: number }
 export interface ImportedDocument {
@@ -23,11 +24,12 @@ export interface PageRenderOptions {
   signal?: AbortSignal;
 }
 export interface ExportProgress {
-  phase: 'assembling' | 'protecting';
+  phase: 'assembling' | 'compressing' | 'protecting';
   completed: number;
   total: number;
 }
 export interface PdfExportOptions extends PdfPasswordOptions {
+  output?: PdfOutputSettings;
   signal?: AbortSignal;
   onProgress?: (progress: ExportProgress) => void;
 }
@@ -35,5 +37,7 @@ export interface PdfEngine {
   importFile(file: File, options?: PdfPasswordOptions): Promise<ImportedDocument>;
   renderThumbnail(doc: ImportedDocument, pageIndex: number, maxWidth: number): Promise<Blob>;
   renderPage(doc: ImportedDocument, pageIndex: number, options: PageRenderOptions): Promise<Blob>;
+  renderExportPage(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, output: PdfOutputSettings,
+    pageIndex: number, options: Pick<PageRenderOptions, 'maxWidth' | 'maxHeight' | 'signal'>): Promise<Blob>;
   exportWorkspace(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, options?: PdfExportOptions): Promise<Blob>;
 }

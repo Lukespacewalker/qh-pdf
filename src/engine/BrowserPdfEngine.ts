@@ -6,6 +6,7 @@ import { newId } from '../lib/ids';
 import { runPdfExport } from './PdfExport';
 import { loadPdfJsRuntime } from './PdfJsLoader';
 import { assertCrop, croppedSize } from '../domain/crop';
+import type { PdfOutputSettings } from '../domain/exportOptions';
 
 const accepted = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
 const MAX_RENDER_PIXELS = 4_000_000;
@@ -222,6 +223,17 @@ export class BrowserPdfEngine implements PdfEngine {
       canvas.width = 0;
       canvas.height = 0;
     }
+  }
+
+  async renderExportPage(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, output: PdfOutputSettings,
+    pageIndex: number, options: Pick<PageRenderOptions, 'maxWidth' | 'maxHeight' | 'signal'>): Promise<Blob> {
+    if (!Number.isSafeInteger(pageIndex) || pageIndex < 0 || pageIndex >= workspace.pages.length) throw new Error('Invalid output preview page');
+    const bytes = await runPdfExport(documents, { pages: [workspace.pages[pageIndex]], selectedPageIds: [] },
+      { output, signal: options.signal }, { pageIndices: [pageIndex], totalPages: workspace.pages.length });
+    if (options.signal?.aborted) throw abortError();
+    const source: ImportedDocument = { id: 'output-preview', fileName: '', mimeType: 'application/pdf', kind: 'pdf', bytes,
+      pages: [{ sourcePageIndex: 0, width: 1, height: 1 }] };
+    return this.renderPage(source, 0, { ...options, rotation: 0 });
   }
 
   async exportWorkspace(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, options: PdfExportOptions = {}): Promise<Blob> {

@@ -1,6 +1,7 @@
 import type { WorkspaceState } from '../domain/workspace';
 import { AppError } from '../errors/AppError';
 import { assertCrop } from '../domain/crop';
+import { validateOutputSettings } from '../domain/numbering';
 import type { ImportedDocument, PdfExportOptions } from './PdfEngine';
 import type {
   PdfExportDocument,
@@ -53,12 +54,16 @@ export function runPdfExport(
   documents: ReadonlyMap<string, ImportedDocument>,
   workspace: WorkspaceState,
   options: PdfExportOptions = {},
+  decorationContext?: PdfExportRequest['decorationContext'],
 ): Promise<ArrayBuffer> {
   if (options.signal?.aborted) return Promise.reject(exportCancelled());
 
   let job: ReturnType<typeof createRequest>;
   try {
+    validateOutputSettings(options.output ?? {}, decorationContext?.totalPages ?? workspace.pages.length);
     job = createRequest(documents, workspace);
+    if (options.output) job.request.output = structuredClone(options.output);
+    if (decorationContext) job.request.decorationContext = structuredClone(decorationContext);
   } catch {
     return Promise.reject(exportFailure());
   }
