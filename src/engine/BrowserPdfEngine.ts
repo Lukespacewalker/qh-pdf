@@ -256,6 +256,7 @@ export class BrowserPdfEngine implements PdfEngine {
       return new Blob([bytes.buffer], { type: 'application/pdf' });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      if (error instanceof AppError && error.code === 'export-failed') throw error;
       throw new AppError('export-failed', 'We couldn’t create the PDF. Your workspace is still here.');
     }
   }

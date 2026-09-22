@@ -2,6 +2,7 @@ import type { WorkspaceState } from '../domain/workspace';
 import { AppError } from '../errors/AppError';
 import { assertCrop } from '../domain/crop';
 import { validateOutputSettings } from '../domain/numbering';
+import { outputErrors } from './exportErrors';
 import type { ImportedDocument, PdfExportOptions } from './PdfEngine';
 import type {
   PdfExportDocument,
@@ -100,6 +101,8 @@ export function runPdfExport(
         catch { fail(); }
       } else if (data?.type === 'result' && data.bytes instanceof ArrayBuffer) {
         finish(() => resolve(data.bytes));
+      } else if (data?.type === 'error' && outputErrors.has(data.message)) {
+        finish(() => reject(new AppError('export-failed', data.message)));
       } else {
         fail();
       }
