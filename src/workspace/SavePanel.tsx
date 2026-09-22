@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 
 export type SaveTarget = 'all' | 'selected';
 
-export function SavePanel({ count, selectedCount, locked, exporting, onSave, onCancel }: {
+export function SavePanel({ count, selectedCount, locked, exporting, onSave, onCancel, saveButtonRef }: {
   count: number; selectedCount: number; locked: boolean; exporting: boolean;
   onSave: (target: SaveTarget, password?: string) => Promise<boolean>; onCancel: () => void;
+  saveButtonRef: RefObject<HTMLButtonElement | null>;
 }) {
   const [protect, setProtect] = useState(false);
   const [password, setPassword] = useState('');
@@ -27,7 +28,7 @@ export function SavePanel({ count, selectedCount, locked, exporting, onSave, onC
           {selectedCount > 0 && <button className="btn" disabled={locked} onClick={() => void submit('selected')}>
             Save {selectedCount} selected {selectedCount === 1 ? 'page' : 'pages'}
           </button>}
-          <button className="btn primary" disabled={locked} onClick={() => void submit('all')}>Save PDF</button>
+          <button ref={saveButtonRef} className="btn primary" disabled={locked} onClick={() => void submit('all')}>Save PDF</button>
         </div>}
     </div>
     <label className="check-label"><input type="checkbox" checked={protect} disabled={locked}

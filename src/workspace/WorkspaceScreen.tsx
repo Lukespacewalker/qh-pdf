@@ -14,6 +14,7 @@ import { SavePanel, type SaveTarget } from './SavePanel';
 import { usePasswordImport } from './usePasswordImport';
 import { useWorkspaceStore } from './useWorkspaceStore';
 import { CropDialog } from './CropDialog';
+import { workspaceShortcut } from './workspaceShortcut';
 
 function download(blob: Blob, filename: string) {
   const link = document.createElement('a');
@@ -28,6 +29,7 @@ function download(blob: Blob, filename: string) {
 
 export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
   const input = useRef<HTMLInputElement>(null);
+  const saveButton = useRef<HTMLButtonElement>(null);
   const [drag, setDrag] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -53,6 +55,24 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
   );
   useEffect(() => { setDone(false); }, [ws.pages]);
   useEffect(() => () => exportJob.current?.abort(), []);
+  useEffect(() => {
+    const handle = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.keyCode === 229) return;
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const action = workspaceShortcut(event, {
+        locked: editLocked, modal: Boolean(document.querySelector('dialog[open]')),
+        editable: Boolean(target?.isContentEditable || target?.closest('input, textarea, select, [role="textbox"]')),
+        pages: ws.pages.length, selected, canUndo: store.history.past.length > 0, canRedo: store.history.future.length > 0,
+      });
+      if (!action) return;
+      if (action === 'save') {
+        if (!saveButton.current || saveButton.current.disabled) return;
+        event.preventDefault(); saveButton.current.click();
+      } else { event.preventDefault(); store[action](); }
+    };
+    window.addEventListener('keydown', handle);
+    return () => window.removeEventListener('keydown', handle);
+  }, [editLocked, selected, store, ws.pages.length]);
 
   async function add(files: File[]) {
     if (editLocked || files.length === 0) return;
@@ -190,7 +210,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
           </SortableContext>
           <DragOverlay>{activePage ? <div className="drag-overlay">Moving page {ws.pages.findIndex(page => page.id === activePage) + 1}</div> : null}</DragOverlay>
         </DndContext>
-        <SavePanel count={ws.pages.length} selectedCount={selected} locked={editLocked} exporting={exporting} onSave={save} onCancel={cancelExport} />
+        <SavePanel count={ws.pages.length} selectedCount={selected} locked={editLocked} exporting={exporting} onSave={save} onCancel={cancelExport} saveButtonRef={saveButton} />
         {exporting && <div className="status" role="status"><MascotState state="working" alt="Quack working" /><div className="export-status">
           <strong>{exportProgress?.phase === 'protecting' ? 'Protecting your PDF…' :
             `Creating page ${exportProgress?.completed ?? 0} of ${exportProgress?.total ?? exportTotal}…`}</strong>
@@ -204,6 +224,12 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
     </div>
     <RecoveryPanel importDocument={importDocument} locked={locked || Boolean(activePage)} onRestoring={setRestoring} onPending={setRecoveryPending} />
     <BrandBanner />
+    <details className="shortcut-help"><summary>Keyboard shortcuts</summary>
+      <dl><dt>Ctrl / ⌘ Z</dt><dd>Undo</dd><dt>Ctrl / ⌘ Shift Z · Ctrl Y</dt><dd>Redo</dd>
+        <dt>Ctrl / ⌘ A</dt><dd>Select all pages</dd><dt>Ctrl / ⌘ D</dt><dd>Duplicate selected pages</dd>
+        <dt>Delete / Backspace</dt><dd>Delete selected pages</dd><dt>Escape</dt><dd>Deselect all</dd><dt>Ctrl / ⌘ S</dt><dd>Save PDF with the current Save options</dd></dl>
+      <p>Shortcuts pause while typing, dragging, processing or using a dialog.</p>
+    </details>
     {preview && <FullPagePreviewDialog pageId={preview.pageId} pages={ws.pages} documents={store.documents}
       engine={engine} opener={preview.opener} onNavigate={pageId => setPreview(current => current ? { ...current, pageId } : null)}
       onRotate={store.rotatePage} onClose={() => setPreview(null)} />}
