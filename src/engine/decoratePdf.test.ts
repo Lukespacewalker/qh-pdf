@@ -104,12 +104,16 @@ describe('PDF decoration', () => {
   });
 
   it.each([
-    { rotation: 0, fixedAxis: 'y', fixedValue: 50, viewport: [100, 200] },
-    { rotation: 90, fixedAxis: 'x', fixedValue: 120, viewport: [200, 100] },
-    { rotation: 180, fixedAxis: 'y', fixedValue: 230, viewport: [100, 200] },
-    { rotation: 270, fixedAxis: 'x', fixedValue: 40, viewport: [200, 100] },
-  ] as const)('aligns to CropBox intersect MediaBox at $rotation° with a nonzero origin', async ({
-    rotation, fixedAxis, fixedValue, viewport,
+    { rotation: 0, position: 'bottom-right', baselineY: 185.8, viewport: [100, 200] },
+    { rotation: 90, position: 'bottom-right', baselineY: 85.8, viewport: [200, 100] },
+    { rotation: 180, position: 'bottom-right', baselineY: 185.8, viewport: [100, 200] },
+    { rotation: 270, position: 'bottom-right', baselineY: 85.8, viewport: [200, 100] },
+    { rotation: 0, position: 'top-right', baselineY: 25, viewport: [100, 200] },
+    { rotation: 90, position: 'top-right', baselineY: 25, viewport: [200, 100] },
+    { rotation: 180, position: 'top-right', baselineY: 25, viewport: [100, 200] },
+    { rotation: 270, position: 'top-right', baselineY: 25, viewport: [200, 100] },
+  ] as const)('aligns $position to CropBox intersect MediaBox at $rotation°', async ({
+    rotation, position, baselineY, viewport,
   }) => {
     const pdf = await PDFDocument.create();
     const page = pdf.addPage([200, 300]);
@@ -119,18 +123,17 @@ describe('PDF decoration', () => {
     const drawText = vi.spyOn(page, 'drawText');
 
     await decoratePdf(pdf, {
-      numbering: numbering({ position: 'bottom-right', margin: 10 }),
+      numbering: numbering({ position, margin: 10, format: 'page-number' }),
     });
 
     expect(drawText).toHaveBeenCalledOnce();
     const [, options] = drawText.mock.calls[0]!;
     expect(options).toBeDefined();
     if (!options) throw new Error('drawText options are missing');
-    expect(options[fixedAxis]).toBeCloseTo(fixedValue, 6);
     expect(options.rotate?.angle).toBe(rotation);
 
     const layout = await extractedLayout(pdf);
-    const item = layout.items.find(candidate => candidate.str === '1');
+    const item = layout.items.find(candidate => candidate.str === 'Page 1');
     expect(item).toBeDefined();
     if (!item) throw new Error('Extracted page number is missing');
     const origin = layout.toViewportPoint(item.transform[4]!, item.transform[5]!);
@@ -139,9 +142,63 @@ describe('PDF decoration', () => {
       item.transform[5]! + item.transform[1]!,
     );
     expect([layout.width, layout.height]).toEqual(viewport);
-    expect(origin[1]).toBeCloseTo(layout.height - 10, 3);
+    expect(origin[1]).toBeCloseTo(baselineY, 3);
     expect(origin[0] + item.width).toBeCloseTo(layout.width - 10, 3);
     expect(baseline[1]).toBeCloseTo(origin[1], 3);
+  });
+
+  it.each([
+    { system: 'latin-lower', start: 1, format: 'page-number', text: 'Page a' },
+    { system: 'thai', start: 10, format: 'number', text: 'ญ' },
+  ] as const)('keeps bottom $system text descenders visible at zero margin', async ({
+    system, start, format, text,
+  }) => {
+    const pdf = await PDFDocument.create();
+    pdf.addPage([100, 200]);
+
+    await decoratePdf(pdf, {
+      numbering: numbering({
+        sections: [{ from: 1, to: 1, start, system }],
+        position: 'bottom-left',
+        margin: 0,
+        format,
+      }),
+    });
+
+    const layout = await extractedLayout(pdf);
+    const item = layout.items.find(candidate => candidate.str === text);
+    expect(item).toBeDefined();
+    if (!item) throw new Error('Extracted page number is missing');
+    const origin = layout.toViewportPoint(item.transform[4]!, item.transform[5]!);
+    expect(origin[1]).toBeCloseTo(195.8, 3);
+  });
+
+  it.each([
+    numbering({ position: 'bottom-left', margin: 100 }),
+    numbering({ position: 'top-center', fontSize: 100, format: 'page-number' }),
+    numbering({ position: 'bottom-right', fontSize: Number.MAX_VALUE }),
+  ])('rejects numbering whose ink bounds cannot fit the visible page', async invalidNumbering => {
+    const pdf = await PDFDocument.create();
+    pdf.addPage([100, 100]);
+
+    await expect(decoratePdf(pdf, { numbering: invalidNumbering }))
+      .rejects.toThrow('Page number does not fit inside the visible page area.');
+  });
+
+  it('allows a large finite watermark to clip while rejecting non-finite layout geometry', async () => {
+    const clipped = await PDFDocument.create();
+    clipped.addPage([100, 100]);
+    await expect(decoratePdf(clipped, {
+      watermark: { text: 'DRAFT', fontSize: 100, color: '#777777', opacity: 0.2, angle: 45 },
+    })).resolves.toBeUndefined();
+
+    const overflowed = await PDFDocument.create();
+    overflowed.addPage([100, 100]);
+    await expect(decoratePdf(overflowed, {
+      watermark: {
+        text: 'DRAFT', fontSize: Number.MAX_VALUE, color: '#777777', opacity: 0.2, angle: 45,
+      },
+    })).rejects.toThrow('Watermark geometry exceeds the supported page range.');
   });
 
   it('draws a horizontal watermark horizontally after the page rotation', async () => {

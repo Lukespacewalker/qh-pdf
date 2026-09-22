@@ -97,6 +97,9 @@ function drawWatermark(page: PDFPage, font: PDFFont, settings: WatermarkSettings
     x: display.width / 2 - (width * Math.cos(radians) - height * Math.sin(radians)) / 2,
     y: display.height / 2 - (width * Math.sin(radians) + height * Math.cos(radians)) / 2,
   };
+  if (![width, height, origin.x, origin.y].every(Number.isFinite)) {
+    throw new Error('Watermark geometry exceeds the supported page range.');
+  }
   const point = fromDisplay(origin, box, rotation);
   page.drawText(settings.text, {
     x: point.x,
@@ -120,15 +123,28 @@ function drawNumber(
   const rotation = pageRotation(page);
   const display = displaySize(box, rotation);
   const textWidth = font.widthOfTextAtSize(text, settings.fontSize);
-  const textHeight = font.heightAtSize(settings.fontSize, { descender: false });
+  const ascent = font.heightAtSize(settings.fontSize, { descender: false });
+  const fullHeight = font.heightAtSize(settings.fontSize, { descender: true });
+  const descent = fullHeight - ascent;
   const horizontal = settings.position.endsWith('left')
     ? settings.margin
     : settings.position.endsWith('right')
       ? display.width - settings.margin - textWidth
       : (display.width - textWidth) / 2;
   const vertical = settings.position.startsWith('top')
-    ? display.height - settings.margin - textHeight
-    : settings.margin;
+    ? display.height - settings.margin - ascent
+    : settings.margin + descent;
+  const bounds = {
+    left: horizontal,
+    right: horizontal + textWidth,
+    bottom: vertical - descent,
+    top: vertical + ascent,
+  };
+  if (![textWidth, ascent, descent, bounds.left, bounds.right, bounds.bottom, bounds.top]
+    .every(Number.isFinite) || bounds.left < 0 || bounds.bottom < 0 ||
+      bounds.right > display.width || bounds.top > display.height) {
+    throw new Error('Page number does not fit inside the visible page area.');
+  }
   const point = fromDisplay({ x: horizontal, y: vertical }, box, rotation);
   page.drawText(text, {
     x: point.x,
