@@ -13,6 +13,7 @@ import { Capabilities } from './Capabilities';
 import { SavePanel, type SaveTarget } from './SavePanel';
 import { usePasswordImport } from './usePasswordImport';
 import { useWorkspaceStore } from './useWorkspaceStore';
+import { CropDialog } from './CropDialog';
 
 function download(blob: Blob, filename: string) {
   const link = document.createElement('a');
@@ -33,6 +34,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
   const [recoveryPending, setRecoveryPending] = useState(true);
   const [activePage, setActivePage] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ pageId: string; opener: HTMLButtonElement } | null>(null);
+  const [cropOpener, setCropOpener] = useState<HTMLButtonElement | null>(null);
   const [done, setDone] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const [exportTotal, setExportTotal] = useState(0);
@@ -67,7 +69,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
       snapshot = target === 'selected'
         ? createSelectedExportWorkspace(current.history.present)
         : {
-          pages: current.history.present.pages.map(page => ({ ...page })),
+          pages: current.history.present.pages.map(page => ({ ...page, ...(page.crop && { crop: { ...page.crop } }) })),
           selectedPageIds: [...current.history.present.selectedPageIds],
         };
     } catch (error) {
@@ -159,6 +161,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
             <button className="btn" aria-label="Rotate right" onClick={() => store.rotate(90)} disabled={editLocked || !selected}>Rotate ↷</button>
             <button className="btn" onClick={store.duplicate} disabled={editLocked || !selected}>Duplicate</button>
             <button className="btn danger" onClick={store.remove} disabled={editLocked || !selected}>Delete</button>
+            <button className="btn" onClick={event => setCropOpener(event.currentTarget)} disabled={editLocked || !selected}>Crop</button>
           </div>
         </div>
         <p className="arrange-hint">Click a page to select it, use Shift for a range, or Ctrl / Command to add pages. The checkbox adds a page on touch and keyboard. Drag the handle or use arrows to reorder.</p>
@@ -205,5 +208,11 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
       engine={engine} opener={preview.opener} onNavigate={pageId => setPreview(current => current ? { ...current, pageId } : null)}
       onRotate={store.rotatePage} onClose={() => setPreview(null)} />}
     {fileInput}{passwordDialog}
+    {cropOpener && (() => {
+      const page = ws.pages.find(page => ws.selectedPageIds.includes(page.id));
+      const document = page && store.documents.get(page.sourceDocumentId);
+      return page && document ? <CropDialog page={page} document={document} count={selected} engine={engine}
+        opener={cropOpener} onApply={store.crop} onClose={() => setCropOpener(null)} /> : null;
+    })()}
   </main>;
 }

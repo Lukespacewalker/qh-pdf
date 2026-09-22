@@ -48,7 +48,10 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, select
     if (thumbnailPriority === null) return;
     let url = '';
     let disposed = false;
-    const job = scheduler.schedule(() => engine.renderThumbnail(doc, page.sourcePageIndex, 260), thumbnailPriority);
+    const controller = new AbortController();
+    const job = scheduler.schedule(() => page.crop
+      ? engine.renderPage(doc, page.sourcePageIndex, { maxWidth: 260, maxHeight: 1000, rotation: page.rotation, crop: page.crop, signal: controller.signal })
+      : engine.renderThumbnail(doc, page.sourcePageIndex, 260), thumbnailPriority);
     job.promise.then(blob => {
       if (disposed) return;
       url = URL.createObjectURL(blob);
@@ -58,10 +61,11 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, select
     });
     return () => {
       disposed = true;
+      controller.abort();
       job.cancel();
       if (url) URL.revokeObjectURL(url);
     };
-  }, [doc, engine, page.sourcePageIndex, scheduler, thumbnailPriority]);
+  }, [doc, engine, page.sourcePageIndex, page.crop, page.rotation, scheduler, thumbnailPriority]);
 
   return <article ref={setCardRef} className={`card ${selected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
     style={{ transform: CSS.Transform.toString(transform), transition }} aria-label={`Page ${index + 1} from ${doc.fileName}`}
@@ -92,7 +96,7 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, select
       disabled={selectionDisabled} aria-pressed={selected}
       onClick={event => select(page.id, { additive: event.ctrlKey || event.metaKey, range: event.shiftKey })}>
       <span className="num">{index + 1}</span>
-      {thumb && <img src={thumb} alt="" draggable={false} style={{ transform: `rotate(${page.rotation}deg)` }} />}
+      {thumb && <img src={thumb} alt="" draggable={false} style={{ transform: `rotate(${page.crop ? 0 : page.rotation}deg)` }} />}
       {previewFailed && <span role="status">Preview unavailable</span>}
     </button>
     <div className="meta"><strong title={doc.fileName}>{doc.fileName}</strong><span>{page.rotation ? `${page.rotation}°` : ''}</span></div>

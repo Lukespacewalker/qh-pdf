@@ -1,5 +1,6 @@
 import type { WorkspaceState } from '../domain/workspace';
 import { AppError } from '../errors/AppError';
+import { assertCrop } from '../domain/crop';
 import type { ImportedDocument, PdfExportOptions } from './PdfEngine';
 import type {
   PdfExportDocument,
@@ -17,6 +18,7 @@ function createRequest(
   if (workspace.pages.length === 0) throw exportFailure();
   const referenced = new Map<string, PdfExportDocument>();
   for (const page of workspace.pages) {
+    if (page.crop !== undefined) assertCrop(page.crop);
     const source = documents.get(page.sourceDocumentId);
     if (!source || !Number.isInteger(page.sourcePageIndex) || page.sourcePageIndex < 0 ||
         page.sourcePageIndex >= source.pages.length || (source.kind === 'image' && page.sourcePageIndex !== 0)) {
@@ -40,6 +42,7 @@ function createRequest(
         sourceDocumentId: page.sourceDocumentId,
         sourcePageIndex: page.sourcePageIndex,
         rotation: page.rotation,
+        ...(page.crop && { crop: { ...page.crop } }),
       })),
     },
     transfers: exportedDocuments.map(document => document.bytes),

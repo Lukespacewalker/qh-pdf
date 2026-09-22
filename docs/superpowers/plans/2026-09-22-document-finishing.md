@@ -37,4 +37,6 @@ Test actual Firefox Stable on Windows and Safari on macOS separately from patche
 - User approved Save-time numbering, independent contiguous non-overlapping sections, decimal/Roman/Latin/Thai systems with alphabet rollover, shared styling and bundled Noto Sans Thai Looped. All five feature groups remain in scope; cross-browser execution is deferred by user instruction.
 - Ruling: compression uses named quality presets with measured actual output size, not guaranteed MB targets; arbitrary input cannot be promised a particular size without uncontrolled quality loss.
 - Ruling: crop is relative visible-area editing, with an explicit hidden-content explanation; no claim of redaction or permanent erasure.
-- Root created managed isolated worktree; baseline verification running. Implementation/review/CI not yet accepted.
+- Root created managed isolated worktree at `097ae61`; Node 24 baseline: 72 unit tests passed.
+- Crop engine, render paths, dialog, undo and validated recovery implemented. Current focused evidence: 91 unit tests and build pass; two Chromium crop workflows pass (all source rotations, actual exported CropBoxes, full preview aspect ratio, undo/reset, invalid crop, cancel and 390 px). Final all-feature acceptance remains pending.
+- Export decoration and compression are isolated Sol assignments with Root-owned integration. No shared-file concurrent writers. Compression feasibility must be demonstrated before exposing presets.

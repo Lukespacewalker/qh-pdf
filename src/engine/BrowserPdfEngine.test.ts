@@ -175,6 +175,17 @@ describe('full-page rendering', () => {
     expect([resources.canvas.width, resources.canvas.height]).toEqual([0, 0]);
   });
 
+  it('renders the kept crop area at its own aspect ratio with the correct offset', async () => {
+    const resources = renderer(600, 900, 90);
+    const doc = await source('crop', [600], 90);
+    await engine.renderPage(doc, 0, { maxWidth: 900, maxHeight: 900, rotation: 0,
+      crop: { top: 0.1, right: 0.2, bottom: 0.3, left: 0.2 } });
+    expect(resources.renderSizes).toEqual([[900, 600]]);
+    expect(resources.page.render).toHaveBeenCalledWith(expect.objectContaining({
+      transform: [1, 0, 0, 1, expect.closeTo(-300), expect.closeTo(-100)],
+    }));
+  });
+
   it('destroys an in-flight PDF.js loading task exactly once on abort', async () => {
     let rejectLoading!: (error: unknown) => void;
     const loading = new Promise<never>((_, reject) => { rejectLoading = reject; });

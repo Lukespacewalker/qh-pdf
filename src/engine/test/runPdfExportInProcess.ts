@@ -28,6 +28,7 @@ export function runPdfExportInProcess(
       sourceDocumentId: page.sourceDocumentId,
       sourcePageIndex: page.sourcePageIndex,
       rotation: page.rotation,
+      ...(page.crop && { crop: { ...page.crop } }),
     })),
   };
   return assemblePdf(request, (completed, total) => {

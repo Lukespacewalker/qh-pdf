@@ -5,6 +5,7 @@ import { AppError } from '../errors/AppError';
 import { newId } from '../lib/ids';
 import { runPdfExport } from './PdfExport';
 import { loadPdfJsRuntime } from './PdfJsLoader';
+import { assertCrop, croppedSize } from '../domain/crop';
 
 const accepted = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
 const MAX_RENDER_PIXELS = 4_000_000;
@@ -128,6 +129,7 @@ export class BrowserPdfEngine implements PdfEngine {
   }
 
   async renderPage(doc: ImportedDocument, pageIndex: number, options: PageRenderOptions): Promise<Blob> {
+    if (options.crop !== undefined) assertCrop(options.crop);
     if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex >= doc.pages.length ||
         ![0, 90, 180, 270].includes(options.rotation)) {
       throw new Error('Invalid page render request');
@@ -141,7 +143,8 @@ export class BrowserPdfEngine implements PdfEngine {
         const rotated = options.rotation === 90 || options.rotation === 270;
         const orientedWidth = rotated ? bitmap.height : bitmap.width;
         const orientedHeight = rotated ? bitmap.width : bitmap.height;
-        const size = renderSize(orientedWidth, orientedHeight, options.maxWidth, options.maxHeight);
+        const kept = croppedSize(orientedWidth, orientedHeight, options.crop);
+        const size = renderSize(kept.width, kept.height, options.maxWidth, options.maxHeight);
         canvas.width = size.width;
         canvas.height = size.height;
         const context = canvas.getContext('2d');
@@ -149,14 +152,15 @@ export class BrowserPdfEngine implements PdfEngine {
         const drawWidth = bitmap.width * size.scale;
         const drawHeight = bitmap.height * size.scale;
         context.save();
+        if (options.crop) context.translate(-orientedWidth * options.crop.left * size.scale, -orientedHeight * options.crop.top * size.scale);
         if (options.rotation === 90) {
-          context.translate(canvas.width, 0);
+          context.translate(orientedWidth * size.scale, 0);
           context.rotate(Math.PI / 2);
         } else if (options.rotation === 180) {
-          context.translate(canvas.width, canvas.height);
+          context.translate(orientedWidth * size.scale, orientedHeight * size.scale);
           context.rotate(Math.PI);
         } else if (options.rotation === 270) {
-          context.translate(0, canvas.height);
+          context.translate(0, orientedHeight * size.scale);
           context.rotate(-Math.PI / 2);
         }
         context.drawImage(bitmap, 0, 0, drawWidth, drawHeight);
@@ -194,12 +198,15 @@ export class BrowserPdfEngine implements PdfEngine {
       const base = page.getViewport({ scale: 1 });
       const rotation = normalizedRotation(base.rotation + options.rotation);
       const oriented = page.getViewport({ scale: 1, rotation });
-      const size = renderSize(oriented.width, oriented.height, options.maxWidth, options.maxHeight);
+      const kept = croppedSize(oriented.width, oriented.height, options.crop);
+      const size = renderSize(kept.width, kept.height, options.maxWidth, options.maxHeight);
       const viewport = page.getViewport({ scale: size.scale, rotation });
       canvas.width = size.width;
       canvas.height = size.height;
       if (!canvas.getContext('2d')) throw new Error('Canvas unavailable');
-      renderTask = page.render({ canvas, viewport });
+      renderTask = page.render({ canvas, viewport, ...(options.crop && {
+        transform: [1, 0, 0, 1, -viewport.width * options.crop.left, -viewport.height * options.crop.top],
+      }) });
       await renderTask.promise;
       if (options.signal?.aborted) throw abortError();
       const blob = await canvasBlob(canvas);

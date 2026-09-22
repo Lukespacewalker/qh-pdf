@@ -11,6 +11,7 @@ export interface PdfExportDocument {
 
 export interface PdfExportPage extends Pick<WorkspacePage, 'sourceDocumentId' | 'sourcePageIndex'> {
   rotation: Rotation;
+  crop?: WorkspacePage['crop'];
 }
 
 export interface PdfExportRequest {

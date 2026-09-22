@@ -1,4 +1,5 @@
 import type { WorkspaceState } from '../domain/workspace';
+import type { CropMargins } from '../domain/crop';
 
 export interface ImportedPageDescriptor { sourcePageIndex: number; width: number; height: number }
 export interface ImportedDocument {
@@ -18,6 +19,7 @@ export interface PageRenderOptions {
   maxWidth: number;
   maxHeight: number;
   rotation: 0 | 90 | 180 | 270;
+  crop?: CropMargins;
   signal?: AbortSignal;
 }
 export interface ExportProgress {

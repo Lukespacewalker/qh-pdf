@@ -29,7 +29,7 @@ export function FullPagePreviewDialog({
   const page = pages[pageIndex];
   const document = page ? documents.get(page.sourceDocumentId) : undefined;
   const renderKey = page && document && viewport.width > 0 && viewport.height > 0
-    ? `${page.id}:${page.rotation}:${zoom}:${viewport.width}:${viewport.height}:${retry}`
+    ? `${page.id}:${page.rotation}:${JSON.stringify(page.crop)}:${zoom}:${viewport.width}:${viewport.height}:${retry}`
     : '';
 
   useLayoutEffect(() => {
@@ -70,6 +70,7 @@ export function FullPagePreviewDialog({
       maxWidth: viewport.width * zoom / 100,
       maxHeight: viewport.height * zoom / 100,
       rotation: page.rotation,
+      crop: page.crop,
       signal: controller.signal,
     }).then(blob => {
       if (controller.signal.aborted) return;
