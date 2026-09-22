@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PdfEngine } from '../engine/PdfEngine';
 import { AppError } from '../errors/AppError';
+import { useI18n } from '../i18n/i18n';
 import { ImportCancelled } from './useWorkspaceStore';
 
 export function usePasswordImport(engine: PdfEngine) {
+  const { t } = useI18n();
   const [request, setRequest] = useState<{ fileName: string; retry: boolean } | null>(null);
   const [password, setPassword] = useState('');
   const resolve = useRef<((value: string | null) => void) | null>(null);
@@ -40,14 +42,14 @@ export function usePasswordImport(engine: PdfEngine) {
   const passwordDialog = <dialog ref={dialog} className="password-dialog" aria-labelledby="unlock-title"
     onCancel={event => { event.preventDefault(); finish(null); }}>
     <form onSubmit={event => { event.preventDefault(); finish(password); }}>
-      <h2 id="unlock-title">Open a protected PDF</h2>
+      <h2 id="unlock-title">{t('Open a protected PDF')}</h2>
       <p className="file-name">{request?.fileName}</p>
-      <p>Your password is used only in this browser and is never saved.</p>
-      {request?.retry && <p className="notice" role="alert">That password didn’t open this PDF. Please try again.</p>}
-      <label className="field">PDF password<input ref={passwordInput} type="password" value={password}
+      <p>{t('Your password is used only in this browser and is never saved.')}</p>
+      {request?.retry && <p className="notice" role="alert">{t('That password didn’t open this PDF. Please try again.')}</p>}
+      <label className="field">{t('PDF password')}<input ref={passwordInput} type="password" value={password}
         autoComplete="off" onChange={event => setPassword(event.target.value)} /></label>
-      <div className="dialog-actions"><button type="button" className="btn" onClick={() => finish(null)}>Cancel import</button>
-        <button className="btn primary" type="submit">Unlock PDF</button></div>
+      <div className="dialog-actions"><button type="button" className="btn" onClick={() => finish(null)}>{t('Cancel import')}</button>
+        <button className="btn primary" type="submit">{t('Unlock PDF')}</button></div>
     </form>
   </dialog>;
   return { importDocument, passwordDialog };
