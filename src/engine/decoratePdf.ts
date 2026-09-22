@@ -74,6 +74,14 @@ function ensureSupportedText(font: PDFFont, text: string): void {
   }
 }
 
+function decomposeThaiSaraAm(text: string): string {
+  // fontkit's ccmp expansion assigns U+0E33 to its nikhahit glyph, so pdf-lib's
+  // ToUnicode map also emits the following sara aa twice. Supplying the same
+  // decomposition explicitly keeps the shaped glyphs/positions but maps them
+  // to U+0E4D + U+0E32, which remains readable and NFKC-equivalent.
+  return text.replaceAll('\u0E33', '\u0E4D\u0E32');
+}
+
 async function embedDecorationFont(output: PDFDocument): Promise<PDFFont> {
   const response = await fetch(FONT_URL);
   if (!response.ok) throw new Error('Could not load the bundled decoration font');
@@ -82,15 +90,16 @@ async function embedDecorationFont(output: PDFDocument): Promise<PDFFont> {
     response.arrayBuffer(),
   ]);
   output.registerFontkit(fontkit);
-  return output.embedFont(bytes, { subset: true });
+  return output.embedFont(bytes, { subset: true, features: { ccmp: false } });
 }
 
 function drawWatermark(page: PDFPage, font: PDFFont, settings: WatermarkSettings): void {
   ensureSupportedText(font, settings.text);
+  const text = decomposeThaiSaraAm(settings.text);
   const box = visibleBox(page);
   const rotation = pageRotation(page);
   const display = displaySize(box, rotation);
-  const width = font.widthOfTextAtSize(settings.text, settings.fontSize);
+  const width = font.widthOfTextAtSize(text, settings.fontSize);
   const height = font.heightAtSize(settings.fontSize, { descender: false });
   const radians = settings.angle * Math.PI / 180;
   const origin = {
@@ -101,7 +110,7 @@ function drawWatermark(page: PDFPage, font: PDFFont, settings: WatermarkSettings
     throw new Error('Watermark geometry exceeds the supported page range.');
   }
   const point = fromDisplay(origin, box, rotation);
-  page.drawText(settings.text, {
+  page.drawText(text, {
     x: point.x,
     y: point.y,
     size: settings.fontSize,
@@ -119,6 +128,7 @@ function drawNumber(
   text: string,
 ): void {
   ensureSupportedText(font, text);
+  text = decomposeThaiSaraAm(text);
   const box = visibleBox(page);
   const rotation = pageRotation(page);
   const display = displaySize(box, rotation);

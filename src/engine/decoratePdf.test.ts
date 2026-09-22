@@ -1,5 +1,6 @@
 // @ts-expect-error Node typings are intentionally not part of the browser app.
 import { readFile } from 'node:fs/promises';
+import fontkit from '@pdf-lib/fontkit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PDFDocument, PDFName, PDFNumber, degrees } from 'pdf-lib';
 import type { PageNumbering, PdfOutputSettings } from '../domain/exportOptions';
@@ -87,6 +88,48 @@ describe('PDF decoration', () => {
     expect(text.findIndex(value => value.includes('ฉบับร่าง')))
       .toBeLessThan(text.findIndex(value => value.includes('Page aa')));
   });
+
+  it.each([
+    { source: 'สำเนา', extracted: 'สําเนา' },
+    { source: 'น้ำ', extracted: 'น้ํา' },
+    { source: 'ฉบับร่าง', extracted: 'ฉบับร่าง' },
+    { source: 'Café', extracted: 'Café' },
+    { source: 'Café', extracted: 'Café' },
+  ])('extracts supported watermark text $source without duplicated characters', async ({
+    source, extracted,
+  }) => {
+    const pdf = await PDFDocument.create();
+    pdf.addPage([300, 400]);
+
+    await decoratePdf(pdf, {
+      watermark: { text: source, fontSize: 30, color: '#777777', opacity: 0.2, angle: 45 },
+    });
+
+    const actual = (await extractedText(pdf)).join('');
+    expect(actual).toBe(extracted);
+    expect(actual.normalize('NFKC')).toBe(source.normalize('NFKC'));
+  });
+
+  it.each(['สำเนา', 'น้ำ', 'ก้ำ', 'ฉบับร่าง', 'Café', 'Café'])(
+    'preserves glyph selection and positioning when preparing %s for extraction',
+    async source => {
+      const bytes = await readFile(fontPath);
+      const original = fontkit.create(bytes).layout(source);
+      const prepared = fontkit.create(bytes).layout(
+        source.replaceAll('\u0E33', '\u0E4D\u0E32'),
+        { ccmp: false },
+      );
+      const signature = (layout: typeof original) => layout.glyphs.map((glyph, index) => ({
+        id: glyph.id,
+        xAdvance: layout.positions[index]!.xAdvance,
+        yAdvance: layout.positions[index]!.yAdvance,
+        xOffset: layout.positions[index]!.xOffset,
+        yOffset: layout.positions[index]!.yOffset,
+      }));
+
+      expect(signature(prepared)).toEqual(signature(original));
+    },
+  );
 
   it('uses original output indices and the full total for a one-page save preview', async () => {
     const pdf = await PDFDocument.create();
