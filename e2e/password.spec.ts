@@ -91,3 +91,36 @@ test('recovery stores encrypted originals and asks for their password again afte
   await expect(page.locator('article')).toHaveCount(2, { timeout: importTimeout });
   await expect(page.getByLabel('Require a password to open the saved PDF')).not.toBeChecked();
 });
+
+test('selected pages reuse password validation and create an encrypted subset', async ({ page }) => {
+  const file = await passwordPdf();
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Choose files' })).toBeEnabled();
+  await page.locator('input[type=file]').setInputFiles(file);
+  await page.getByLabel('PDF password', { exact: true }).fill('fixture-secret');
+  await page.getByRole('button', { name: 'Unlock PDF' }).click();
+  await expect(page.locator('article')).toHaveCount(2, { timeout: importTimeout });
+  await page.getByRole('checkbox', { name: 'Add page 2 from synthetic-private.pdf to selection', exact: true }).check();
+  await page.getByLabel('Require a password to open the saved PDF').check();
+  const selectedPassword = 'subset 🔐';
+  await page.getByLabel('New PDF password', { exact: true }).fill(selectedPassword);
+  await page.getByLabel('Confirm password', { exact: true }).fill('different');
+  await page.getByRole('button', { name: 'Save 1 selected page', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('do not match');
+  await page.getByLabel('Confirm password', { exact: true }).fill(selectedPassword);
+
+  const pending = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Save 1 selected page', exact: true }).click();
+  const download = await pending;
+  expect(download.suggestedFilename()).toBe('quack-honk-selected-pages.pdf');
+  const bytes = await readFile((await download.path())!);
+  const toolkit = await createPdfToolkit();
+  await expect(toolkit.unlock(bytes, { password: 'wrong' })).rejects.toThrow();
+  const decoded = await toolkit.unlock(bytes, { password: selectedPassword });
+  const pdf = await PDFDocument.load(decoded);
+  expect(pdf.getPages().map(outputPage => [outputPage.getWidth(), outputPage.getRotation().angle]))
+    .toEqual([[222, 90]]);
+  await expect(page.locator('article')).toHaveCount(2);
+  await expect(page.locator('article.selected')).toHaveCount(1);
+  await expect(page.getByLabel('New PDF password', { exact: true })).toHaveValue('');
+});

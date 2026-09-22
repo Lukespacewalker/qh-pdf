@@ -13,14 +13,17 @@ async function pdfFile(name: string, widths: number[], rotation = 0) {
   }
   return { name, mimeType: 'application/pdf', buffer: Buffer.from(await pdf.save()) };
 }
-async function exportPdf(page: Page) {
+async function downloadPdf(page: Page, buttonName: string) {
   const pending = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Save PDF', exact: true }).click();
+  await page.getByRole('button', { name: buttonName, exact: true }).click();
   const download = await pending;
   expect(await download.failure()).toBeNull();
   const path = await download.path();
   if (!path) throw new Error('The download has no local file');
-  return PDFDocument.load(await readFile(path));
+  return { download, pdf: await PDFDocument.load(await readFile(path)) };
+}
+async function exportPdf(page: Page) {
+  return (await downloadPdf(page, 'Save PDF')).pdf;
 }
 async function expectThumbnails(page: Page, count: number) {
   const images = page.locator('article .page-thumbnail img');
@@ -118,6 +121,170 @@ test('real PDF previews and edited export preserve order, duplicate pages and so
   expect(output.getPages().map(p => p.getRotation().angle)).toEqual([180, 180, 0, 90]);
   await expect(page.getByText('Your PDF is ready.', { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test('selection controls support touch-friendly toggles, Shift ranges, all/none and preview preservation', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile('select.pdf', [110, 220, 330, 440, 550]));
+  await expectThumbnails(page, 5);
+  expect(await page.locator('.num').evaluateAll(badges => badges.every(badge => {
+    const rect = badge.getBoundingClientRect();
+    const topmost = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return topmost === badge || badge.contains(topmost);
+  }))).toBe(true);
+  await expect(page.locator('.head .sub')).toHaveText('5 pages');
+  const selectionStatus = page.getByRole('status', { name: 'Selected pages', exact: true });
+  await expect(selectionStatus).toHaveText('0 of 5 selected');
+
+  await page.getByRole('checkbox', { name: 'Add page 1 from select.pdf to selection', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'Add page 3 from select.pdf to selection', exact: true }).check();
+  await expect(selectionStatus).toHaveText('2 of 5 selected');
+  await expect(page.locator('article.selected')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Preview page 2 from select.pdf', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Page preview', exact: true }).getByRole('button', { name: 'Close preview', exact: true }).click();
+  await expect(selectionStatus).toHaveText('2 of 5 selected');
+
+  await page.getByRole('button', { name: 'Deselect all', exact: true }).click();
+  await page.getByRole('button', { name: 'Select page 2 from select.pdf', exact: true }).click();
+  await page.getByRole('button', { name: 'Select page 4 from select.pdf', exact: true }).click({ modifiers: ['Shift'] });
+  await expect(selectionStatus).toHaveText('3 of 5 selected');
+  await page.getByRole('button', { name: 'Select page 1 from select.pdf', exact: true }).click({ modifiers: ['Control', 'Shift'] });
+  await expect(selectionStatus).toHaveText('4 of 5 selected');
+  await expect(page.locator('article').nth(4)).not.toHaveClass(/selected/);
+
+  await page.getByRole('button', { name: 'Select all', exact: true }).click();
+  await expect(selectionStatus).toHaveText('5 of 5 selected');
+  await page.getByRole('button', { name: 'Deselect all', exact: true }).click();
+  await expect(selectionStatus).toHaveText('0 of 5 selected');
+});
+
+test('multi-page edit tools target exactly the selected pages and deletion is undoable', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile('edit-selection.pdf', [110, 220, 330, 440, 550]));
+  await expectThumbnails(page, 5);
+  await page.getByRole('checkbox', { name: 'Add page 2 from edit-selection.pdf to selection', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'Add page 4 from edit-selection.pdf to selection', exact: true }).check();
+  await page.getByRole('button', { name: 'Rotate right', exact: true }).click();
+  await expect(page.locator('article').nth(1).locator('.meta')).toContainText('90°');
+  await expect(page.locator('article').nth(3).locator('.meta')).toContainText('90°');
+  await page.getByRole('button', { name: 'Duplicate', exact: true }).click();
+  await expect(page.locator('article')).toHaveCount(7);
+  await expect(page.locator('article.selected')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page.locator('article')).toHaveCount(5);
+  await expect(page.locator('article.selected')).toHaveCount(0);
+  const deletedOutput = await exportPdf(page);
+  expect(deletedOutput.getPages().map(outputPage => outputPage.getWidth())).toEqual([110, 220, 330, 440, 550]);
+  expect(deletedOutput.getPages().map(outputPage => outputPage.getRotation().angle)).toEqual([0, 90, 0, 90, 0]);
+
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(page.locator('article')).toHaveCount(7);
+  await expect(page.locator('article.selected')).toHaveCount(2);
+});
+
+test('selected export follows workspace order and leaves all-pages export unchanged', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile('sparse.pdf', [110, 220, 330, 440, 550]));
+  await expectThumbnails(page, 5);
+  await expect(page.getByRole('button', { name: /Save \d+ selected pages?/ })).toHaveCount(0);
+  await page.getByRole('checkbox', { name: 'Add page 2 from sparse.pdf to selection', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'Add page 5 from sparse.pdf to selection', exact: true }).check();
+  await page.getByRole('button', { name: 'Move page 5 left', exact: true }).click();
+  await page.getByRole('button', { name: 'Move page 4 left', exact: true }).click();
+  await page.getByRole('button', { name: 'Move page 3 left', exact: true }).click();
+
+  const selected = await downloadPdf(page, 'Save 2 selected pages');
+  expect(selected.download.suggestedFilename()).toBe('quack-honk-selected-pages.pdf');
+  expect(selected.pdf.getPages().map(outputPage => outputPage.getWidth())).toEqual([550, 220]);
+  await expect(page.locator('article')).toHaveCount(5);
+  await expect(page.locator('article.selected')).toHaveCount(2);
+
+  const allPages = await exportPdf(page);
+  expect(allPages.getPages().map(outputPage => outputPage.getWidth())).toEqual([110, 550, 220, 330, 440]);
+});
+
+test('selected export preserves duplicates, mixed sources and additive rotations', async ({ page }) => {
+  await page.goto('/');
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 40; canvas.height = 50;
+    const context = canvas.getContext('2d')!;
+    context.fillStyle = '#b94d30'; context.fillRect(0, 0, 40, 50);
+    return canvas.toDataURL('image/png').split(',')[1];
+  });
+  await page.locator('input[type=file]').setInputFiles([
+    await pdfFile('mixed.pdf', [111, 222], 90),
+    { name: 'picture.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') },
+  ]);
+  await expectThumbnails(page, 3);
+  await page.getByRole('checkbox', { name: 'Add page 2 from mixed.pdf to selection', exact: true }).check();
+  await page.getByRole('button', { name: 'Rotate right', exact: true }).click();
+  await page.getByRole('button', { name: 'Duplicate', exact: true }).click();
+  await page.getByRole('button', { name: 'Deselect all', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Add page 4 from picture.png to selection', exact: true }).check();
+  await page.getByRole('button', { name: 'Rotate right', exact: true }).click();
+  await page.getByRole('button', { name: 'Deselect all', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Add page 4 from picture.png to selection', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'Add page 3 from mixed.pdf to selection', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'Add page 2 from mixed.pdf to selection', exact: true }).check();
+
+  const selected = await downloadPdf(page, 'Save 3 selected pages');
+  expect(selected.pdf.getPages().map(outputPage => outputPage.getWidth())).toEqual([222, 222, 40]);
+  expect(selected.pdf.getPages().map(outputPage => outputPage.getRotation().angle)).toEqual([180, 180, 90]);
+  await expect(page.locator('article.selected')).toHaveCount(3);
+  await expect(page.locator('article')).toHaveCount(4);
+});
+
+test('selected export progress and cancellation use only the submitted pages', async ({ page }) => {
+  const pageCount = 30;
+  let downloads = 0;
+  page.on('download', () => { downloads += 1; });
+  await page.route(/\/assets\/PdfExport\.worker-.*\.js$/, async route => {
+    await new Promise(resolve => setTimeout(resolve, 1_000));
+    await route.continue();
+  });
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile(
+    'selected-progress.pdf', Array.from({ length: pageCount }, (_, index) => 200 + index),
+  ));
+  await expect(page.locator('article')).toHaveCount(pageCount, { timeout: renderTimeout });
+  await page.getByRole('checkbox', { name: 'Add page 1 from selected-progress.pdf to selection', exact: true }).check();
+  await page.getByRole('checkbox', { name: 'Add page 30 from selected-progress.pdf to selection', exact: true }).check();
+  await page.getByRole('button', { name: 'Save 2 selected pages', exact: true }).click();
+  await expect(page.getByText('Creating page 0 of 2…', { exact: true })).toBeVisible();
+  await expect(page.getByRole('progressbar', { name: 'Creating PDF' })).toHaveAttribute('max', '2');
+  await page.getByRole('button', { name: 'Cancel export', exact: true }).click();
+
+  await expect(page.getByText('Export cancelled. Your workspace is still here.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('status', { name: 'Selected pages', exact: true })).toHaveText('2 of 30 selected');
+  await expect(page.getByRole('button', { name: 'Save 2 selected pages', exact: true })).toBeEnabled();
+  await page.waitForTimeout(500);
+  expect(downloads).toBe(0);
+});
+
+test('selected export failure preserves the selection and permits a clean retry', async ({ page }) => {
+  const workerAsset = /\/assets\/PdfExport\.worker-.*\.js$/;
+  let downloads = 0;
+  page.on('download', () => { downloads += 1; });
+  await page.route(workerAsset, route => route.abort());
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(await pdfFile('selected-retry.pdf', [111, 222, 333]));
+  await expectThumbnails(page, 3);
+  await page.getByRole('checkbox', { name: 'Add page 2 from selected-retry.pdf to selection', exact: true }).check();
+  await page.getByRole('button', { name: 'Save 1 selected page', exact: true }).click();
+
+  await expect(page.getByRole('alert')).toHaveText('We couldn’t create the PDF. Your workspace is still here.');
+  await expect(page.locator('article')).toHaveCount(3);
+  await expect(page.locator('article.selected')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Save 1 selected page', exact: true })).toBeEnabled();
+  expect(downloads).toBe(0);
+
+  await page.unroute(workerAsset);
+  const retried = await downloadPdf(page, 'Save 1 selected page');
+  expect(retried.download.suggestedFilename()).toBe('quack-honk-selected-pages.pdf');
+  expect(retried.pdf.getPages().map(outputPage => outputPage.getWidth())).toEqual([222]);
+  await expect(page.getByRole('status', { name: 'Selected pages', exact: true })).toHaveText('1 of 3 selected');
+  expect(downloads).toBe(1);
 });
 
 test('full-page preview preserves selection while navigating and restores focus on Escape', async ({ page }) => {
@@ -413,6 +580,32 @@ test('mobile viewport has no horizontal overflow and supports non-drag editing',
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.locator('input[type=file]').setInputFiles(await pdfFile('mobile.pdf', [111, 222]));
   await expectThumbnails(page, 2);
+  const toolbarMetrics = await page.locator('.toolbar').evaluate(toolbar => ({
+    height: toolbar.getBoundingClientRect().height,
+    rowCount: new Set([...toolbar.querySelectorAll('button, output')]
+      .map(control => control.getBoundingClientRect().top)).size,
+    minimumControlHeight: Math.min(...[...toolbar.querySelectorAll('button, output')]
+      .map(control => control.getBoundingClientRect().height)),
+  }));
+  expect(toolbarMetrics.height).toBeLessThanOrEqual(220);
+  expect(toolbarMetrics.rowCount).toBe(4);
+  expect(toolbarMetrics.minimumControlHeight).toBeGreaterThanOrEqual(42);
+  const firstSelection = page.getByRole('checkbox', { name: 'Add page 1 from mobile.pdf to selection', exact: true });
+  await page.getByRole('button', { name: 'Drag page 1 to reorder', exact: true }).focus();
+  await page.keyboard.press('Tab');
+  await expect(firstSelection).toBeFocused();
+  expect(await firstSelection.evaluate(input => {
+    const toolbar = document.querySelector('.toolbar');
+    if (!toolbar) return false;
+    const inputRect = input.getBoundingClientRect();
+    const toolbarRect = toolbar.getBoundingClientRect();
+    return inputRect.top >= toolbarRect.bottom + 8 &&
+      document.elementFromPoint(inputRect.left + inputRect.width / 2, inputRect.top + inputRect.height / 2) === input;
+  })).toBe(true);
+  await page.keyboard.press('Space');
+  await page.getByRole('checkbox', { name: 'Add page 2 from mobile.pdf to selection', exact: true }).check();
+  await expect(page.getByRole('status', { name: 'Selected pages', exact: true })).toHaveText('2 of 2 selected');
+  await page.getByRole('button', { name: 'Deselect all', exact: true }).click();
   await page.getByRole('button', { name: 'Preview page 1 from mobile.pdf', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Page preview', exact: true });
   await expect(dialog).toBeVisible();

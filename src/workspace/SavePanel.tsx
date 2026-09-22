@@ -1,26 +1,34 @@
 import { useState } from 'react';
 
-export function SavePanel({ count, locked, exporting, onSave, onCancel }: {
-  count: number; locked: boolean; exporting: boolean; onSave: (password?: string) => Promise<boolean>; onCancel: () => void;
+export type SaveTarget = 'all' | 'selected';
+
+export function SavePanel({ count, selectedCount, locked, exporting, onSave, onCancel }: {
+  count: number; selectedCount: number; locked: boolean; exporting: boolean;
+  onSave: (target: SaveTarget, password?: string) => Promise<boolean>; onCancel: () => void;
 }) {
   const [protect, setProtect] = useState(false);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
-  async function submit() {
+  async function submit(target: SaveTarget) {
     setError('');
     if (protect && (!password || password.includes('\0') || new TextEncoder().encode(password).length > 127)) {
       setError('Enter a password up to 127 UTF-8 bytes (roughly 127 English characters).'); return;
     }
     if (protect && password !== confirm) { setError('The passwords do not match.'); return; }
-    if (await onSave(protect ? password : undefined)) { setPassword(''); setConfirm(''); }
+    if (await onSave(target, protect ? password : undefined)) { setPassword(''); setConfirm(''); }
   }
   return <section className="save-panel" aria-labelledby="save-title">
     <div className="save-summary"><div><h2 id="save-title">Ready to save?</h2>
       <p>Download all {count} {count === 1 ? 'page' : 'pages'} in the order shown.</p></div>
       {exporting
         ? <button className="btn danger" onClick={onCancel}>Cancel export</button>
-        : <button className="btn primary" disabled={locked} onClick={() => void submit()}>Save PDF</button>}
+        : <div className="save-actions">
+          {selectedCount > 0 && <button className="btn" disabled={locked} onClick={() => void submit('selected')}>
+            Save {selectedCount} selected {selectedCount === 1 ? 'page' : 'pages'}
+          </button>}
+          <button className="btn primary" disabled={locked} onClick={() => void submit('all')}>Save PDF</button>
+        </div>}
     </div>
     <label className="check-label"><input type="checkbox" checked={protect} disabled={locked}
       onChange={event => { setProtect(event.target.checked); setPassword(''); setConfirm(''); setError(''); }} />Require a password to open the saved PDF</label>
