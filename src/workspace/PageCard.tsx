@@ -4,12 +4,14 @@ import { CSS } from '@dnd-kit/utilities';
 import type { ImportedDocument, PdfEngine } from '../engine/PdfEngine';
 import type { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
 import type { WorkspacePage } from '../domain/workspace';
+import { useI18n } from '../i18n/i18n';
 import { useWorkspaceStore } from './useWorkspaceStore';
 
 export function PageCard({ page, index, doc, engine, scheduler, disabled, selectionDisabled, last, onPreview }: {
   page: WorkspacePage; index: number; doc: ImportedDocument; engine: PdfEngine; scheduler: ThumbnailScheduler; disabled: boolean; selectionDisabled: boolean; last: boolean;
   onPreview: (pageId: string, opener: HTMLButtonElement) => void;
 }) {
+  const { t } = useI18n();
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: page.id, disabled });
   const [thumb, setThumb] = useState('');
@@ -19,6 +21,7 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, select
   const selected = useWorkspaceStore(s => s.history.present.selectedPageIds.includes(page.id));
   const select = useWorkspaceStore(s => s.select);
   const move = useWorkspaceStore(s => s.move);
+  const renderedRotation = page.crop ? page.rotation : 0;
   const setCardRef = useCallback((node: HTMLElement | null) => {
     setNodeRef(node);
     setCardNode(node);
@@ -50,7 +53,7 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, select
     let disposed = false;
     const controller = new AbortController();
     const job = scheduler.schedule(() => page.crop
-      ? engine.renderPage(doc, page.sourcePageIndex, { maxWidth: 260, maxHeight: 1000, rotation: page.rotation, crop: page.crop, signal: controller.signal })
+      ? engine.renderPage(doc, page.sourcePageIndex, { maxWidth: 260, maxHeight: 1000, rotation: renderedRotation, crop: page.crop, signal: controller.signal })
       : engine.renderThumbnail(doc, page.sourcePageIndex, 260), thumbnailPriority);
     job.promise.then(blob => {
       if (disposed) return;
@@ -65,10 +68,10 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, select
       job.cancel();
       if (url) URL.revokeObjectURL(url);
     };
-  }, [doc, engine, page.sourcePageIndex, page.crop, page.rotation, scheduler, thumbnailPriority]);
+  }, [doc, engine, page.sourcePageIndex, page.crop, renderedRotation, scheduler, thumbnailPriority]);
 
   return <article ref={setCardRef} className={`card ${selected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
-    style={{ transform: CSS.Transform.toString(transform), transition }} aria-label={`Page ${index + 1} from ${doc.fileName}`}
+    style={{ transform: CSS.Transform.toString(transform), transition }} aria-label={t('Page {page} from {file}', { page: index + 1, file: doc.fileName })}
     onFocusCapture={event => {
       const toolbar = document.querySelector<HTMLElement>('.toolbar');
       if (!toolbar || !(event.target instanceof HTMLElement)) return;
@@ -81,31 +84,31 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, select
     }}>
     <div className="card-top-controls">
       <button ref={setActivatorNodeRef} className="drag-handle" {...attributes} {...listeners}
-        aria-label={`Drag page ${index + 1} to reorder`} disabled={disabled}><span aria-hidden="true">⠿</span> Drag</button>
+        aria-label={t('Drag page {page} to reorder', { page: index + 1 })} disabled={disabled}><span aria-hidden="true">⠿</span> {t('Drag')}</button>
       <label className="page-selection">
         <input type="checkbox" checked={selected} disabled={selectionDisabled}
           aria-label={selected
-            ? `Remove page ${index + 1} from selection (${doc.fileName})`
-            : `Add page ${index + 1} from ${doc.fileName} to selection`}
+            ? t('Remove page {page} from selection ({file})', { page: index + 1, file: doc.fileName })
+            : t('Add page {page} from {file} to selection', { page: index + 1, file: doc.fileName })}
           onChange={() => select(page.id, { additive: true, range: false })} />
-        <span>{selected ? 'Selected' : 'Select'}</span>
+        <span>{selected ? t('Selected') : t('Select')}</span>
       </label>
     </div>
     <button className="page-thumbnail" style={{ width: '100%', padding: 0 }}
-      aria-label={`Select page ${index + 1} from ${doc.fileName}`}
+      aria-label={t('Select page {page} from {file}', { page: index + 1, file: doc.fileName })}
       disabled={selectionDisabled} aria-pressed={selected}
       onClick={event => select(page.id, { additive: event.ctrlKey || event.metaKey, range: event.shiftKey })}>
       <span className="num">{index + 1}</span>
       {thumb && <img src={thumb} alt="" draggable={false} style={{ transform: `rotate(${page.crop ? 0 : page.rotation}deg)` }} />}
-      {previewFailed && <span role="status">Preview unavailable</span>}
+      {previewFailed && <span role="status">{t('Preview unavailable')}</span>}
     </button>
     <div className="meta"><strong title={doc.fileName}>{doc.fileName}</strong><span>{page.rotation ? `${page.rotation}°` : ''}</span></div>
     <button className="btn page-preview-button" type="button" disabled={disabled}
-      aria-label={`Preview page ${index + 1} from ${doc.fileName}`}
-      onClick={event => onPreview(page.id, event.currentTarget)}>Preview</button>
+      aria-label={t('Preview page {page} from {file}', { page: index + 1, file: doc.fileName })}
+      onClick={event => onPreview(page.id, event.currentTarget)}>{t('Preview')}</button>
     <div className="mini">
-      <button className="btn" onClick={() => move(page.id, -1)} disabled={disabled || index === 0} aria-label={`Move page ${index + 1} left`}>←</button>
-      <button className="btn" onClick={() => move(page.id, 1)} disabled={disabled || last} aria-label={`Move page ${index + 1} right`}>→</button>
+      <button className="btn" onClick={() => move(page.id, -1)} disabled={disabled || index === 0} aria-label={t('Move page {page} left', { page: index + 1 })}>←</button>
+      <button className="btn" onClick={() => move(page.id, 1)} disabled={disabled || last} aria-label={t('Move page {page} right', { page: index + 1 })}>→</button>
     </div>
   </article>;
 }

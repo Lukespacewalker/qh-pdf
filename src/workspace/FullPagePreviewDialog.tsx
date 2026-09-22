@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { WorkspacePage } from '../domain/workspace';
 import type { ImportedDocument, PdfEngine } from '../engine/PdfEngine';
+import { useI18n } from '../i18n/i18n';
 
 type RenderState =
   | { key: string; status: 'loading' }
@@ -19,6 +20,7 @@ export function FullPagePreviewDialog({
   onRotate: (pageId: string, degrees: 90 | -90) => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
@@ -90,7 +92,9 @@ export function FullPagePreviewDialog({
   const visibleRender = render?.key === renderKey ? render : null;
   const previous = pageIndex > 0 ? pages[pageIndex - 1] : undefined;
   const next = pageIndex >= 0 && pageIndex < pages.length - 1 ? pages[pageIndex + 1] : undefined;
-  const imageLabel = document && pageIndex >= 0 ? `Preview of page ${pageIndex + 1} from ${document.fileName}` : 'Page preview';
+  const imageLabel = document && pageIndex >= 0
+    ? t('Preview of page {page} from {file}', { page: pageIndex + 1, file: document.fileName })
+    : t('Page preview');
   const close = () => dialogRef.current?.close();
   const restoreFocus = () => {
     onClose();
@@ -135,36 +139,36 @@ export function FullPagePreviewDialog({
     }}>
     <header className="full-page-preview-header">
       <div>
-        <h2 id="page-preview-title">Page preview</h2>
-        <p aria-live="polite">{pageIndex >= 0 ? `Page ${pageIndex + 1} / ${pages.length}` : 'Page unavailable'}</p>
+        <h2 id="page-preview-title">{t('Page preview')}</h2>
+        <p aria-live="polite">{pageIndex >= 0 ? t('Page {page} / {total}', { page: pageIndex + 1, total: pages.length }) : t('Page unavailable')}</p>
       </div>
-      <button className="btn" type="button" aria-label="Close preview" onClick={close} autoFocus>Close</button>
+      <button className="btn" type="button" aria-label={t('Close preview')} onClick={close} autoFocus>{t('Close')}</button>
     </header>
-    <div className="full-page-preview-controls" aria-label="Preview controls">
-      <div className="preview-control-group" role="group" aria-label="Page navigation">
-        <button className="btn" type="button" aria-label="Previous page" disabled={!previous} onClick={() => previous && onNavigate(previous.id)}>← Previous</button>
-        <button className="btn" type="button" aria-label="Next page" disabled={!next} onClick={() => next && onNavigate(next.id)}>Next →</button>
+    <div className="full-page-preview-controls" aria-label={t('Preview controls')}>
+      <div className="preview-control-group" role="group" aria-label={t('Page navigation')}>
+        <button className="btn" type="button" aria-label={t('Previous page')} disabled={!previous} onClick={() => previous && onNavigate(previous.id)}>← {t('Previous')}</button>
+        <button className="btn" type="button" aria-label={t('Next page')} disabled={!next} onClick={() => next && onNavigate(next.id)}>{t('Next')} →</button>
       </div>
-      <div className="preview-control-group" role="group" aria-label="Preview zoom">
-        <button className="btn" type="button" aria-label="Zoom out" disabled={zoom === 50} onClick={() => changeZoom(zoom - 25)}>−</button>
-        <output aria-label="Preview zoom level">{zoom}%</output>
-        <button className="btn" type="button" aria-label="Zoom in" disabled={zoom === 200} onClick={() => changeZoom(zoom + 25)}>+</button>
-        <button className="btn" type="button" aria-label="Fit page" onClick={() => { setZoom(100); viewportRef.current?.scrollTo({ top: 0, left: 0 }); }}>Fit page</button>
+      <div className="preview-control-group" role="group" aria-label={t('Preview zoom')}>
+        <button className="btn" type="button" aria-label={t('Zoom out')} disabled={zoom === 50} onClick={() => changeZoom(zoom - 25)}>−</button>
+        <output aria-label={t('Preview zoom level')}>{zoom}%</output>
+        <button className="btn" type="button" aria-label={t('Zoom in')} disabled={zoom === 200} onClick={() => changeZoom(zoom + 25)}>+</button>
+        <button className="btn" type="button" aria-label={t('Fit page')} onClick={() => { setZoom(100); viewportRef.current?.scrollTo({ top: 0, left: 0 }); }}>{t('Fit page')}</button>
       </div>
-      <div className="preview-control-group" role="group" aria-label="Rotate previewed page">
-        <button className="btn" type="button" aria-label="Rotate previewed page left" disabled={!page} onClick={() => page && onRotate(page.id, -90)}>↶ Rotate</button>
-        <button className="btn" type="button" aria-label="Rotate previewed page right" disabled={!page} onClick={() => page && onRotate(page.id, 90)}>Rotate ↷</button>
+      <div className="preview-control-group" role="group" aria-label={t('Rotate previewed page')}>
+        <button className="btn" type="button" aria-label={t('Rotate previewed page left')} disabled={!page} onClick={() => page && onRotate(page.id, -90)}>↶ {t('Rotate')}</button>
+        <button className="btn" type="button" aria-label={t('Rotate previewed page right')} disabled={!page} onClick={() => page && onRotate(page.id, 90)}>{t('Rotate')} ↷</button>
       </div>
     </div>
-    <div ref={viewportRef} className="full-page-preview-viewport" tabIndex={0} aria-label="Scrollable page preview">
+    <div ref={viewportRef} className="full-page-preview-viewport" tabIndex={0} aria-label={t('Scrollable page preview')}>
       <div className="full-page-preview-stage">
-        {!page || !document ? <div className="preview-message" role="alert">This page’s source is unavailable. Close the preview and restore the document.</div> :
+        {!page || !document ? <div className="preview-message" role="alert">{t('This page’s source is unavailable. Close the preview and restore the document.')}</div> :
           visibleRender?.status === 'error' ? <div className="preview-message" role="alert">
-            <strong>We couldn’t render this page.</strong>
-            <button className="btn" type="button" onClick={() => setRetry(value => value + 1)}>Retry preview</button>
+            <strong>{t('We couldn’t render this page.')}</strong>
+            <button className="btn" type="button" onClick={() => setRetry(value => value + 1)}>{t('Retry preview')}</button>
           </div> : visibleRender?.status === 'ready' ?
             <img className="full-page-preview-image" src={visibleRender.url} alt={imageLabel} draggable={false} /> :
-            <div className="preview-message" role="status">Rendering page…</div>}
+            <div className="preview-message" role="status">{t('Rendering page…')}</div>}
       </div>
     </div>
   </dialog>;

@@ -2,11 +2,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { WorkspaceState } from '../domain/workspace';
 import type { PdfOutputSettings } from '../domain/exportOptions';
 import type { ImportedDocument, PdfEngine } from '../engine/PdfEngine';
+import { useI18n } from '../i18n/i18n';
 
 export function OutputPreviewDialog({ workspace, documents, output, engine, opener, onClose }: {
   workspace: WorkspaceState; documents: ReadonlyMap<string, ImportedDocument>; output: PdfOutputSettings;
   engine: PdfEngine; opener: HTMLButtonElement; onClose: () => void;
 }) {
+  const { t } = useI18n();
   const dialog = useRef<HTMLDialogElement>(null);
   const [index, setIndex] = useState(0);
   const [retry, setRetry] = useState(0);
@@ -33,15 +35,15 @@ export function OutputPreviewDialog({ workspace, documents, output, engine, open
       if (event.shiftKey && event.target === nodes[0]) { event.preventDefault(); nodes.at(-1)?.focus(); }
       else if (!event.shiftKey && event.target === nodes.at(-1)) { event.preventDefault(); nodes[0]?.focus(); }
     }}>
-    <div className="finishing-heading"><h2 id="output-preview-title">Export preview</h2><button className="btn" autoFocus onClick={() => dialog.current?.close()}>Close</button></div>
-    <p>Check crop, page numbers and watermark. Compression is applied when saving.</p>
+    <div className="finishing-heading"><h2 id="output-preview-title">{t('Export preview')}</h2><button className="btn" autoFocus onClick={() => dialog.current?.close()}>{t('Close')}</button></div>
+    <p>{t('Check crop, page numbers and watermark. Compression is applied when saving.')}</p>
     <div className="output-preview-navigation">
-      <button className="btn" disabled={index === 0} onClick={() => setIndex(index - 1)}>← Previous</button>
-      <span aria-live="polite">Output page {index + 1} / {workspace.pages.length}</span>
-      <button className="btn" disabled={index === workspace.pages.length - 1} onClick={() => setIndex(index + 1)}>Next →</button>
+      <button className="btn" disabled={index === 0} onClick={() => setIndex(index - 1)}>← {t('Previous')}</button>
+      <span aria-live="polite">{t('Output page {page} / {total}', { page: index + 1, total: workspace.pages.length })}</span>
+      <button className="btn" disabled={index === workspace.pages.length - 1} onClick={() => setIndex(index + 1)}>{t('Next')} →</button>
     </div>
-    <div className="output-preview-stage">{current?.url ? <img src={current.url} alt={`Export preview of output page ${index + 1}`} />
-      : current?.failed ? <div role="alert"><p>Could not preview this output. Check the page-number size and margins, or the watermark text and size.</p><button className="btn" onClick={() => setRetry(retry + 1)}>Retry preview</button></div>
-      : <p role="status">Rendering export preview…</p>}</div>
+    <div className="output-preview-stage">{current?.url ? <img src={current.url} alt={t('Export preview of output page {page}', { page: index + 1 })} />
+      : current?.failed ? <div role="alert"><p>{t('Could not preview this output. Check the page-number size and margins, or the watermark text and size.')}</p><button className="btn" onClick={() => setRetry(retry + 1)}>{t('Retry preview')}</button></div>
+      : <p role="status">{t('Rendering export preview…')}</p>}</div>
   </dialog>;
 }
