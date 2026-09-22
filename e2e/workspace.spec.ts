@@ -398,9 +398,10 @@ test('full-page preview discards stale renders during rapid navigation and repea
   await settledDialog.getByRole('button', { name: 'Close preview', exact: true }).click();
   await expect(settledDialog).not.toBeVisible();
   expect(errors).toEqual([]);
-  await expect.poll(() => page.evaluate(
-    () => (window as unknown as { previewUrlCounts: { created: number; revoked: number } }).previewUrlCounts.created,
-  )).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => {
+    const counts = (window as unknown as { previewUrlCounts: { created: number; revoked: number } }).previewUrlCounts;
+    return counts.created > 0 && counts.revoked === counts.created;
+  }), { message: 'preview object URLs should all be revoked after React effect cleanup' }).toBe(true);
   const urlCounts = await page.evaluate(
     () => (window as unknown as { previewUrlCounts: { created: number; revoked: number } }).previewUrlCounts,
   );

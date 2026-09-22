@@ -31,6 +31,14 @@ npm run bench:large-documents
 
 It exercises 10, 50, 100, 300 and 500 blank pages by default. Set `QH_PDF_BENCH_PAGES` to a comma-separated subset for a smoke run. Results are written beneath the ignored `test-results/` directory. The timings and approximate Chromium JS heap sample describe the test machine and fixture only; they are not product speed or capacity guarantees.
 
+For a repeatable local startup and first-use measurement:
+
+```bash
+npm run bench:startup
+```
+
+The command builds the app, serves that exact build on `127.0.0.1:4175`, and runs five Playwright Chromium samples by default. Each cold sample uses a fresh browser context; warm reload and two PDF imports retain that context and its normal browser cache. Readiness waits until recovery detection has finished and **Choose files** is enabled. The report separates import completion, first decoded thumbnail, and all-thumbnail times. It also records raw, computed gzip and Brotli asset sizes separately from Chromium `PerformanceResourceTiming` transfer, encoded-body and decoded-body sizes. Decoded JavaScript bytes are not V8 parse time. Set `QH_STARTUP_SAMPLES` to an integer of at least three or `QH_STARTUP_RESULT` to an ignored output path. These local medians describe one machine and synthetic three-page fixture; they are not a user-facing speed guarantee.
+
 ## Current prototype
 
 - Import PDF, JPEG, PNG and WebP through the file picker. The empty workspace also accepts file drops.
@@ -45,6 +53,7 @@ It exercises 10, 50, 100, 300 and 500 blank pages by default. Set `QH_PDF_BENCH_
 - Reject empty or incomplete exports instead of silently dropping pages.
 - Open password-protected PDFs with the supplied password and optionally require a new password on exported PDFs (AES-256).
 - Keep an optional recovery copy in this browser using IndexedDB, then restore it after reopening the page. Recovery is off by default; clearing the copy also turns it off without closing the open workspace.
+- Load PDF.js and its rendering worker on the first PDF import, restore or preview that needs them. Opening the empty workspace and importing or exporting images do not load PDF.js.
 
 The welcome screen describes the supported tasks and file types. Page editing controls are separate from the download/password section below the pages. Thumbnail clicks select one page unless Shift or Ctrl/Cmd is held; the labeled checkbox beside each Drag handle always adds or removes that page. Each page has an explicit Preview button; the preview returns focus to that button when it closes. To reorder with the keyboard, focus a page's Drag handle, press Space, use the arrow keys, then press Space to drop or Escape to cancel.
 
@@ -101,18 +110,19 @@ Password processing uses pinned `pdfstudio` 0.4.0 with QPDF 12.3.2, native QPDF 
 This is still a prototype:
 
 - PDF assembly and image embedding use a fresh module worker for each export. PDF pages are copied in batches per source and workspace rotation so shared resource graphs are not recopied page by page. Only referenced sources are sent, as transferable copies, so the original buffers remain available for retry, undo and recovery. Progress and cancellation cover assembly; optional password encryption remains isolated in its own cancellable QPDF worker. Copies and retained source buffers mean peak memory is still browser- and device-dependent, and worker isolation does not impose a memory ceiling or guarantee secure memory zeroization.
-- Thumbnails use a two-job priority scheduler, a 600-pixel viewport margin and browser `content-visibility` containment. Off-screen cards remain in the DOM so drag, keyboard and arrow reorder targets stay stable; this is not true DOM windowing. Import parsing and page-metadata enumeration still run through PDF.js from the UI-side engine and require further measurement for complex documents.
+- Thumbnails use a two-job priority scheduler, a 600-pixel viewport margin and browser `content-visibility` containment. Off-screen cards remain in the DOM so drag, keyboard and arrow reorder targets stay stable; this is not true DOM windowing. PDF.js now loads on the first PDF operation, but import parsing and page-metadata enumeration still run through it in the UI-side engine and require further measurement for complex documents.
 - Focused previews render only while the dialog is open. Their raster canvas is capped at 4 million pixels and 4096 pixels per dimension, and stale PDF.js loading/render tasks and object URLs are released on navigation, zoom, rotation and close. This bounds the output canvas allocation; it does not bound source-image decoding or whole-PDF parser memory.
 - The synthetic Chromium benchmark completes 10, 50, 100, 300 and 500 blank-page fixtures and checks cancellation at the largest requested size. That evidence is a regression baseline, not a guarantee that arbitrary 500-page files will fit memory or perform similarly.
 - OCR, Office conversion and full PDF text editing are not supported. Password support covers standard PDF passwords, not certificate-based or third-party DRM security handlers.
 - The bundled QPDF version trails upstream releases. Worker timeouts limit parser hangs; hostile-document memory exhaustion remains a limitation. Further parser hardening and dependency upgrades require ongoing review.
 - Editing creates a new PDF. Preservation of interactive forms, signatures, document-level bookmarks, accessibility tags and attachments is not guaranteed.
 - Complex font/CMap and image-decoder cases, malformed-document fuzzing, large-file limits, Safari and Firefox require further validation.
+- A failed dynamic PDF.js module request leaves the workspace usable and the application retries its loader call. Chromium 153 kept an HTTP 503 module fetch failed in the tab's native module cache, so a same-tab retry could not make a second request in that tested case. The visible error advises saving open work before manually reloading; the app does not reload automatically or evaluate cache-busted module copies.
 - Mobile has the focused preview, labeled additive-selection checkboxes, drag handles and non-drag controls. Comprehensive keyboard shortcuts, Thai UI, dark mode and full brand typography remain planned work.
 - CSS is currently used directly; the planned Tailwind migration has not been done.
 - No security certification, compliance status or universal privacy guarantee is claimed.
 
-The build currently emits a large-chunk warning for the PDF libraries. Do not hide that warning by raising the threshold; measure lazy loading and code splitting in the performance phase.
+The initial application chunk no longer includes PDF.js. The deferred renderer, PDF worker, export worker and QPDF WASM are still substantial assets loaded only by the operations that need them. Chunk warning thresholds remain unchanged.
 
 ## Brand assets
 

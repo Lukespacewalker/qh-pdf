@@ -1,12 +1,11 @@
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import type { PDFPageProxy, RenderTask } from 'pdfjs-dist';
 import type { PdfEngine, ImportedDocument, PageRenderOptions, PdfExportOptions, PdfPasswordOptions } from './PdfEngine';
 import type { WorkspaceState } from '../domain/workspace';
 import { AppError } from '../errors/AppError';
 import { newId } from '../lib/ids';
 import { runPdfExport } from './PdfExport';
+import { loadPdfJsRuntime } from './PdfJsLoader';
 
-GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 const accepted = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
 const MAX_RENDER_PIXELS = 4_000_000;
 const MAX_RENDER_DIMENSION = 4_096;
@@ -62,9 +61,15 @@ export class BrowserPdfEngine implements PdfEngine {
         pages: [{ sourcePageIndex: 0, ...size }],
       };
     }
+    let pdfJs;
+    try {
+      pdfJs = await loadPdfJsRuntime();
+    } catch {
+      throw new AppError('import-failed', 'The PDF tools couldn’t load. Check your connection and try again. If it still fails, save any open work before reloading this tab.');
+    }
     // PDF.js may transfer its input buffer. Keep both source and working bytes.
     // This app renders pages only, without the viewer scripting layer.
-    const task = getDocument({ data: bytes.slice(0), password: options.password });
+    const task = pdfJs.getDocument({ data: bytes.slice(0), password: options.password });
     try {
       const pdf = await task.promise;
       const { info } = await pdf.getMetadata();
@@ -102,6 +107,7 @@ export class BrowserPdfEngine implements PdfEngine {
     if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex >= doc.pages.length || !Number.isFinite(maxWidth) || maxWidth <= 0) {
       throw new Error('Invalid thumbnail request');
     }
+    const { getDocument } = await loadPdfJsRuntime();
     const task = getDocument({ data: (doc.unlockedBytes ?? doc.bytes).slice(0) });
     const canvas = document.createElement('canvas');
     try {
@@ -167,10 +173,12 @@ export class BrowserPdfEngine implements PdfEngine {
 
     // PDF.js may transfer its input buffer. Render from a copy so export,
     // recovery, retry and undo retain the original source bytes.
+    const { getDocument } = await loadPdfJsRuntime();
+    if (options.signal?.aborted) throw abortError();
     const task = getDocument({ data: (doc.unlockedBytes ?? doc.bytes).slice(0) });
     const canvas = document.createElement('canvas');
-    let page: Awaited<ReturnType<Awaited<typeof task.promise>['getPage']>> | undefined;
-    let renderTask: ReturnType<NonNullable<typeof page>['render']> | undefined;
+    let page: PDFPageProxy | undefined;
+    let renderTask: RenderTask | undefined;
     let destroyPromise: Promise<void> | undefined;
     const destroy = () => destroyPromise ??= task.destroy();
     const cancel = () => {

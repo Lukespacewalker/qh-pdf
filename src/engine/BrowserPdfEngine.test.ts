@@ -7,12 +7,16 @@ import type { WorkspacePage } from '../domain/workspace';
 // Only isolate the browser renderer at module initialization. Export tests
 // below create, write and reopen real PDFs using the real pdf-lib engine.
 vi.mock('pdfjs-dist', () => ({ getDocument: vi.fn(), GlobalWorkerOptions: {} }));
-vi.mock('pdfjs-dist/build/pdf.worker.min.mjs?url', () => ({ default: '/test-worker.mjs' }));
+vi.mock('./PdfJsLoader', async () => {
+  const { getDocument } = await import('pdfjs-dist');
+  return { loadPdfJsRuntime: vi.fn(async () => ({ getDocument })) };
+});
 vi.mock('./PdfExport', async () => {
   const { runPdfExportInProcess } = await import('./test/runPdfExportInProcess');
   return { runPdfExport: runPdfExportInProcess };
 });
 import { BrowserPdfEngine } from './BrowserPdfEngine';
+import { loadPdfJsRuntime } from './PdfJsLoader';
 
 async function source(id: string, widths: number[], rotation = 0): Promise<ImportedDocument> {
   const pdf = await PDFDocument.create();
@@ -27,7 +31,12 @@ const page = (id: string, sourceDocumentId: string, sourcePageIndex = 0, rotatio
   ({ id, sourceDocumentId, sourcePageIndex, rotation });
 
 let engine: BrowserPdfEngine;
-beforeEach(() => { engine = new BrowserPdfEngine(); });
+beforeEach(() => {
+  engine = new BrowserPdfEngine();
+  vi.mocked(getDocument).mockReset();
+  vi.mocked(loadPdfJsRuntime).mockReset();
+  vi.mocked(loadPdfJsRuntime).mockResolvedValue({ getDocument } as never);
+});
 
 describe('real PDF export', () => {
   it('preserves source rotation and applies the additional workspace rotation', async () => {
@@ -156,8 +165,7 @@ describe('full-page rendering', () => {
       pages: [{ sourcePageIndex: 0, width: 600, height: 900 }],
     }, 0, { maxWidth: 800, maxHeight: 800, rotation: 0, signal: controller.signal });
 
-    await Promise.resolve();
-    await Promise.resolve();
+    await vi.waitFor(() => expect(resources.page.render).toHaveBeenCalledOnce());
     controller.abort();
 
     await expect(request).rejects.toMatchObject({ name: 'AbortError' });
@@ -183,10 +191,28 @@ describe('full-page rendering', () => {
       pages: [{ sourcePageIndex: 0, width: 600, height: 900 }],
     }, 0, { maxWidth: 800, maxHeight: 800, rotation: 0, signal: controller.signal });
 
+    await vi.waitFor(() => expect(getDocument).toHaveBeenCalledOnce());
     controller.abort();
 
     await expect(request).rejects.toMatchObject({ name: 'AbortError' });
     expect(destroy).toHaveBeenCalledOnce();
     expect([canvas.width, canvas.height]).toEqual([0, 0]);
+  });
+
+  it('does not create a PDF.js task when preview is cancelled while the runtime loads', async () => {
+    let resolveRuntime!: (runtime: { getDocument: typeof getDocument }) => void;
+    vi.mocked(loadPdfJsRuntime).mockReturnValueOnce(new Promise(done => { resolveRuntime = done; }) as never);
+    const controller = new AbortController();
+    const request = engine.renderPage({
+      id: 'preview', fileName: 'preview.pdf', mimeType: 'application/pdf', kind: 'pdf',
+      bytes: Uint8Array.from([1]).buffer,
+      pages: [{ sourcePageIndex: 0, width: 600, height: 900 }],
+    }, 0, { maxWidth: 800, maxHeight: 800, rotation: 0, signal: controller.signal });
+
+    controller.abort();
+    resolveRuntime({ getDocument });
+
+    await expect(request).rejects.toMatchObject({ name: 'AbortError' });
+    expect(getDocument).not.toHaveBeenCalled();
   });
 });
