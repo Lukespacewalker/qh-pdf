@@ -1,5 +1,8 @@
 import type { WorkspaceState } from '../domain/workspace';
 import { AppError } from '../errors/AppError';
+import { assertCrop } from '../domain/crop';
+import { validateOutputSettings } from '../domain/numbering';
+import { outputErrors } from './exportErrors';
 import type { ImportedDocument, PdfExportOptions } from './PdfEngine';
 import type {
   PdfExportDocument,
@@ -17,6 +20,7 @@ function createRequest(
   if (workspace.pages.length === 0) throw exportFailure();
   const referenced = new Map<string, PdfExportDocument>();
   for (const page of workspace.pages) {
+    if (page.crop !== undefined) assertCrop(page.crop);
     const source = documents.get(page.sourceDocumentId);
     if (!source || !Number.isInteger(page.sourcePageIndex) || page.sourcePageIndex < 0 ||
         page.sourcePageIndex >= source.pages.length || (source.kind === 'image' && page.sourcePageIndex !== 0)) {
@@ -40,6 +44,7 @@ function createRequest(
         sourceDocumentId: page.sourceDocumentId,
         sourcePageIndex: page.sourcePageIndex,
         rotation: page.rotation,
+        ...(page.crop && { crop: { ...page.crop } }),
       })),
     },
     transfers: exportedDocuments.map(document => document.bytes),
@@ -50,12 +55,16 @@ export function runPdfExport(
   documents: ReadonlyMap<string, ImportedDocument>,
   workspace: WorkspaceState,
   options: PdfExportOptions = {},
+  decorationContext?: PdfExportRequest['decorationContext'],
 ): Promise<ArrayBuffer> {
   if (options.signal?.aborted) return Promise.reject(exportCancelled());
 
   let job: ReturnType<typeof createRequest>;
   try {
+    validateOutputSettings(options.output ?? {}, decorationContext?.totalPages ?? workspace.pages.length);
     job = createRequest(documents, workspace);
+    if (options.output) job.request.output = structuredClone(options.output);
+    if (decorationContext) job.request.decorationContext = structuredClone(decorationContext);
   } catch {
     return Promise.reject(exportFailure());
   }
@@ -92,6 +101,8 @@ export function runPdfExport(
         catch { fail(); }
       } else if (data?.type === 'result' && data.bytes instanceof ArrayBuffer) {
         finish(() => resolve(data.bytes));
+      } else if (data?.type === 'error' && outputErrors.has(data.message)) {
+        finish(() => reject(new AppError('export-failed', data.message)));
       } else {
         fail();
       }

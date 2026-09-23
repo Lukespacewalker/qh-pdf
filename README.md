@@ -45,9 +45,13 @@ The command builds the app, serves that exact build on `127.0.0.1:4175`, and run
 - Select one page, use Shift-click for a contiguous range, or use Ctrl/Cmd-click for additive selection. Visible page checkboxes support additive selection on touch and keyboard, with Select all and Deselect all in the toolbar.
 - Open any page in a focused preview, move through the workspace, zoom from 50–200%, and rotate the viewed page without changing the selection.
 - Rotate, duplicate, delete, move left/right, undo and redo.
+- Crop selected pages using a preview and percentage margins. Crops rotate with the page, support undo/reset and survive optional recovery. Cropping hides content; it does not erase it.
 - Reorder with a visible drag handle using a mouse, touch, or keyboard; arrow buttons remain available.
 - Recover after deleting the last page using the empty-state Undo control.
 - Combine pages from multiple PDFs and pictures into one download, or save only the selected pages in their current workspace order.
+- Add Save-time page numbers: choose the first output page, starting value and decimal, Roman, Latin or Thai letters. Advanced sections use independent ranges and sequences with shared placement and styling. Preview the actual crop, numbering and Thai/Latin text watermark before saving.
+- Choose Off, Lossless, Balanced or Smaller file compression, with an actual output size and optimization result. Compression preserves text and vectors and runs before optional password protection.
+- Switch between English and Thai. Use the keyboard-shortcut help for undo/redo, selection, duplication, deletion and saving; shortcuts pause inside inputs/dialogs and during processing or dragging.
 - Create the output in a dedicated browser worker with page-based progress and cancellation.
 - Preserve source PDF page rotation and add the requested workspace rotation.
 - Reject empty or incomplete exports instead of silently dropping pages.
@@ -58,6 +62,10 @@ The command builds the app, serves that exact build on `127.0.0.1:4175`, and run
 The welcome screen describes the supported tasks and file types. Page editing controls are separate from the download/password section below the pages. Thumbnail clicks select one page unless Shift or Ctrl/Cmd is held; the labeled checkbox beside each Drag handle always adds or removes that page. Each page has an explicit Preview button; the preview returns focus to that button when it closes. To reorder with the keyboard, focus a page's Drag handle, press Space, use the arrow keys, then press Space to drop or Escape to cancel.
 
 `Save PDF` always downloads every page shown. When one or more pages are selected, `Save selected pages` downloads that subset in workspace order. Both actions share the same optional output-password fields, worker progress, cancellation, and retry behavior. Exporting a subset does not change the workspace or selection.
+
+Numbering, watermark and compression are Save options, separate from workspace history and recovery. Numbering uses the final output order at the moment of export: the first selected page is output page 1. Simple numbering runs from the chosen start page to the end; advanced sections leave uncovered pages unnumbered. Overlapping, reversed or out-of-range sections fail visibly. Latin letters continue from z to aa; the 41-letter Thai document sequence continues from ฮ to กก. Roman numerals support 1–3999. The preview target explicitly chooses all or selected pages, and its page numbers use that target's total.
+
+Lossless uses QPDF Flate level 9 and object streams. Balanced and Smaller file additionally optimize eligible images at JPEG quality 75 and 45 respectively. These values are encoder settings, not a promised percentage of retained visual quality or a target file size. Existing JPEGs and other unsupported image structures may not shrink. A successful optimization that is larger retains the assembled bytes; a failed optimization is reported. Savings compare bytes before password protection, while the final download size includes it. No whole-page rasterization is used.
 
 Recovery stores the original source files and current page edits atomically, not undo history. It retains encrypted originals and asks for their opening password again when restoring; decrypted working bytes and passwords are never persisted. A saved-status indicator reports pending and failed writes. Conflicting writes from another tab are rejected rather than silently replacing that tab's copy. Browser storage is not a backup: unsaved changes, storage eviction, private browsing, device loss or clearing site data can still lose work.
 
@@ -118,19 +126,21 @@ This is still a prototype:
 - Editing creates a new PDF. Preservation of interactive forms, signatures, document-level bookmarks, accessibility tags and attachments is not guaranteed.
 - Complex font/CMap and image-decoder cases, malformed-document fuzzing, large-file limits, Safari and Firefox require further validation.
 - A failed dynamic PDF.js module request leaves the workspace usable and the application retries its loader call. Chromium 153 kept an HTTP 503 module fetch failed in the tab's native module cache, so a same-tab retry could not make a second request in that tested case. The visible error advises saving open work before manually reloading; the app does not reload automatically or evaluate cache-busted module copies.
-- Mobile has the focused preview, labeled additive-selection checkboxes, drag handles and non-drag controls. Comprehensive keyboard shortcuts, Thai UI, dark mode and full brand typography remain planned work.
+- Mobile has focused page/crop/export previews, labeled additive-selection checkboxes, drag handles and non-drag controls. Thai UI and workspace shortcuts are available; dark mode and full brand typography remain planned work.
 - CSS is currently used directly; the planned Tailwind migration has not been done.
 - No security certification, compliance status or universal privacy guarantee is claimed.
 
-The initial application chunk no longer includes PDF.js. The deferred renderer, PDF worker, export worker and QPDF WASM are still substantial assets loaded only by the operations that need them. Chunk warning thresholds remain unchanged.
+The initial application chunk excludes PDF.js, fontkit, the decoration font and QPDF. These remain deferred assets loaded by the operations that need them. Chunk warning thresholds remain unchanged.
 
 ## Brand assets
 
-The three restored poses (`quack-empty-state`, `quack-working`, `honk-error`) are faithful WebP derivatives of the supplied PNG artwork, resized proportionally to 192 pixels with optimized transparency. Existing `quack-hello`, `honk-happy` and `honk-worried-warning` derivatives remain included. Their checksums were validated during transfer; browser tests also decode all six files. No font files are included.
+The three restored poses (`quack-empty-state`, `quack-working`, `honk-error`) are faithful WebP derivatives of the supplied PNG artwork, resized proportionally to 192 pixels with optimized transparency. Existing `quack-hello`, `honk-happy` and `honk-worried-warning` derivatives remain included. Their checksums were validated during transfer; browser tests also decode all six files. Noto Sans Thai Looped Regular v2.000 is bundled for PDF decorations; [font provenance and OFL notice](public/licenses/fonts/README.md) record its source and checksum. It is embedded into exports and is not a remote UI font.
 
 ## Design references
 
 - [Product and architecture design](docs/superpowers/specs/2026-09-12-quack-honk-pdf-design.md)
 - [Original implementation plan](docs/superpowers/plans/2026-09-12-quack-honk-pdf-prototype.md)
+- [Current document-finishing design](docs/superpowers/specs/2026-09-22-document-finishing-design.md)
+- [Current execution record and deferred cross-browser/device plan](docs/superpowers/plans/2026-09-22-document-finishing.md)
 
 These documents describe the target V1. The current scope and limitations above take precedence when describing this prototype's status.

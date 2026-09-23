@@ -5,6 +5,8 @@ import { AppError } from '../errors/AppError';
 import { newId } from '../lib/ids';
 import { runPdfExport } from './PdfExport';
 import { loadPdfJsRuntime } from './PdfJsLoader';
+import { assertCrop, croppedSize } from '../domain/crop';
+import type { PdfOutputSettings } from '../domain/exportOptions';
 
 const accepted = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
 const MAX_RENDER_PIXELS = 4_000_000;
@@ -128,6 +130,7 @@ export class BrowserPdfEngine implements PdfEngine {
   }
 
   async renderPage(doc: ImportedDocument, pageIndex: number, options: PageRenderOptions): Promise<Blob> {
+    if (options.crop !== undefined) assertCrop(options.crop);
     if (!Number.isInteger(pageIndex) || pageIndex < 0 || pageIndex >= doc.pages.length ||
         ![0, 90, 180, 270].includes(options.rotation)) {
       throw new Error('Invalid page render request');
@@ -141,7 +144,8 @@ export class BrowserPdfEngine implements PdfEngine {
         const rotated = options.rotation === 90 || options.rotation === 270;
         const orientedWidth = rotated ? bitmap.height : bitmap.width;
         const orientedHeight = rotated ? bitmap.width : bitmap.height;
-        const size = renderSize(orientedWidth, orientedHeight, options.maxWidth, options.maxHeight);
+        const kept = croppedSize(orientedWidth, orientedHeight, options.crop);
+        const size = renderSize(kept.width, kept.height, options.maxWidth, options.maxHeight);
         canvas.width = size.width;
         canvas.height = size.height;
         const context = canvas.getContext('2d');
@@ -149,14 +153,15 @@ export class BrowserPdfEngine implements PdfEngine {
         const drawWidth = bitmap.width * size.scale;
         const drawHeight = bitmap.height * size.scale;
         context.save();
+        if (options.crop) context.translate(-orientedWidth * options.crop.left * size.scale, -orientedHeight * options.crop.top * size.scale);
         if (options.rotation === 90) {
-          context.translate(canvas.width, 0);
+          context.translate(orientedWidth * size.scale, 0);
           context.rotate(Math.PI / 2);
         } else if (options.rotation === 180) {
-          context.translate(canvas.width, canvas.height);
+          context.translate(orientedWidth * size.scale, orientedHeight * size.scale);
           context.rotate(Math.PI);
         } else if (options.rotation === 270) {
-          context.translate(0, canvas.height);
+          context.translate(0, orientedHeight * size.scale);
           context.rotate(-Math.PI / 2);
         }
         context.drawImage(bitmap, 0, 0, drawWidth, drawHeight);
@@ -194,12 +199,15 @@ export class BrowserPdfEngine implements PdfEngine {
       const base = page.getViewport({ scale: 1 });
       const rotation = normalizedRotation(base.rotation + options.rotation);
       const oriented = page.getViewport({ scale: 1, rotation });
-      const size = renderSize(oriented.width, oriented.height, options.maxWidth, options.maxHeight);
+      const kept = croppedSize(oriented.width, oriented.height, options.crop);
+      const size = renderSize(kept.width, kept.height, options.maxWidth, options.maxHeight);
       const viewport = page.getViewport({ scale: size.scale, rotation });
       canvas.width = size.width;
       canvas.height = size.height;
       if (!canvas.getContext('2d')) throw new Error('Canvas unavailable');
-      renderTask = page.render({ canvas, viewport });
+      renderTask = page.render({ canvas, viewport, ...(options.crop && {
+        transform: [1, 0, 0, 1, -viewport.width * options.crop.left, -viewport.height * options.crop.top],
+      }) });
       await renderTask.promise;
       if (options.signal?.aborted) throw abortError();
       const blob = await canvasBlob(canvas);
@@ -217,17 +225,38 @@ export class BrowserPdfEngine implements PdfEngine {
     }
   }
 
+  async renderExportPage(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, output: PdfOutputSettings,
+    pageIndex: number, options: Pick<PageRenderOptions, 'maxWidth' | 'maxHeight' | 'signal'>): Promise<Blob> {
+    if (!Number.isSafeInteger(pageIndex) || pageIndex < 0 || pageIndex >= workspace.pages.length) throw new Error('Invalid output preview page');
+    const bytes = await runPdfExport(documents, { pages: [workspace.pages[pageIndex]], selectedPageIds: [] },
+      { output, signal: options.signal }, { pageIndices: [pageIndex], totalPages: workspace.pages.length });
+    if (options.signal?.aborted) throw abortError();
+    const source: ImportedDocument = { id: 'output-preview', fileName: '', mimeType: 'application/pdf', kind: 'pdf', bytes,
+      pages: [{ sourcePageIndex: 0, width: 1, height: 1 }] };
+    return this.renderPage(source, 0, { ...options, rotation: 0 });
+  }
+
   async exportWorkspace(documents: ReadonlyMap<string, ImportedDocument>, workspace: WorkspaceState, options: PdfExportOptions = {}): Promise<Blob> {
     try {
       let bytes = new Uint8Array(await runPdfExport(documents, workspace, options));
+      const level = options.output?.compression;
+      if (level && level !== 'off') {
+        options.onProgress?.({ phase: 'compressing', completed: workspace.pages.length, total: workspace.pages.length });
+        const beforeBytes = bytes.byteLength;
+        const { compressPdf } = await import('./PdfCompression');
+        bytes = await compressPdf(bytes, level, options.signal);
+        options.onCompression?.({ beforeBytes, afterBytes: bytes.byteLength });
+      }
       if (options.password !== undefined) {
         options.onProgress?.({ phase: 'protecting', completed: workspace.pages.length, total: workspace.pages.length });
         const { lockPdf } = await import('./PdfSecurity');
         bytes = await lockPdf(bytes, options.password, options.signal);
       }
+      if (options.signal?.aborted) throw abortError();
       return new Blob([bytes.buffer], { type: 'application/pdf' });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      if (error instanceof AppError && error.code === 'export-failed') throw error;
       throw new AppError('export-failed', 'We couldn’t create the PDF. Your workspace is still here.');
     }
   }

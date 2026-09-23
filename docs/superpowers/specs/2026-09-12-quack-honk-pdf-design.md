@@ -4,6 +4,8 @@
 **Working title:** `quack-honk-pdf`  
 **Date:** 2026-09-12
 
+Scope update: Save-time numbering/watermark/compression, crop, Thai UI and shortcuts follow the authorized [2026-09-22 document-finishing design](2026-09-22-document-finishing-design.md). Its decisions supersede earlier exclusions or future-only treatment of those features below; this original direction is retained as history. README and the current execution record describe implementation evidence.
+
 ## 1. Product Goal
 
 Build a free, privacy-first browser PDF workspace by Quack & Honk.
