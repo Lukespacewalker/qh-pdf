@@ -101,7 +101,7 @@
 .save-summary p { margin: 8px 0 0; color: var(--secondary); font-size: 13px; line-height: 1.5; }
 .save-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .save-actions .primary { min-width: 150px; }
-.check-label { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; font-weight: 400; line-height: 1.6; }
+.check-label { display: flex; align-items: center; gap: 9px; min-height: 44px; font-size: 13px; font-weight: 400; line-height: 1.6; }
 .check-label input { width: 17px; height: 17px; margin: 2px 0 0; accent-color: var(--primary); flex: 0 0 auto; }
 .save-note, .password-fields p { color: var(--secondary); font-size: 12px; line-height: 1.6; margin: 8px 0 0 26px; }
 .password-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 660px; margin-top: 18px; }
@@ -123,7 +123,7 @@
 .recovery-pending { order: -1; padding: 22px; border: 1px solid var(--control-border); border-radius: 7px; background: var(--surface); }
 .recovery-pending strong { color: var(--text); font-weight: 600; }
 .recovery-pending p { font-size: 13px; line-height: 1.6; }
-.text-btn { border: 0; background: transparent; padding: 8px 0; min-height: 36px; color: var(--secondary); text-decoration: underline; font-size: 12px; }
+.text-btn { border: 0; background: transparent; padding: 8px 0; min-height: 44px; color: var(--secondary); text-decoration: underline; font-size: 12px; }
 .brand-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid var(--border); padding: 18px 0 0; }
 .brand-banner-copy { display: flex; flex: 1; align-items: center; justify-content: space-between; gap: 20px; min-width: 0; }
 .brand-banner-copy > p { color: var(--secondary); margin: 0; font-size: 12px; line-height: 1.6; }

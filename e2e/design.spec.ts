@@ -91,3 +91,24 @@ test('homepage remains readable and usable with 200 percent content zoom', async
   await expect(chooser).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
+
+test('mobile save and recovery controls have full touch targets', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  const pdf = await PDFDocument.create();
+  pdf.addPage([240, 360]);
+  await page.locator('input[type=file]').setInputFiles({ name: 'touch-targets.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await pdf.save()) });
+  await expect(page.locator('article')).toHaveCount(1);
+  const protect = page.getByRole('checkbox', { name: 'Require a password to open the saved PDF', exact: true });
+  const recovery = page.getByRole('checkbox', { name: 'Remember work on this device', exact: true });
+  for (const checkbox of [protect, recovery]) {
+    expect(await checkbox.evaluate(node => node.closest('label')!.getBoundingClientRect().height)).toBeGreaterThanOrEqual(42);
+  }
+  await recovery.check();
+  await expect(page.getByTestId('recovery-status')).toHaveText('Saved on this device');
+  const clear = page.getByRole('button', { name: 'Clear saved work', exact: true });
+  expect((await clear.boundingBox())!.height).toBeGreaterThanOrEqual(42);
+  await clear.click();
+  await expect(page.getByTestId('recovery-status')).toHaveText('Saved copy cleared. Recovery is off.');
+  await expect(page.locator('article')).toHaveCount(1);
+});
