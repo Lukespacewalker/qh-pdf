@@ -31,15 +31,15 @@ Files: `src/brand/brand.css`, `src/index.css`, `src/app/App.tsx`, `src/workspace
 - [x] Implement the selected warm split homepage, three numbered steps and compact brand footer using original artwork.
 - [x] Restyle the active workspace, page cards, save controls, preview, password dialogs, progress, notices and recovery.
 - [x] Preserve names/semantics and all processing handlers. Retain mobile four-row toolbar and explicit controls; avoid changing deletion/storage logic.
-- [ ] Run new design coverage, then required unit/build/browser/hosting suites against the same source revision.
+- [x] Run new design coverage, then required unit/build/browser/hosting suites against the same source revision.
 
 ## Task 3: Review rendered usability and freeze the delivery
 
 Files: README and design/plan acceptance records; product files only if review finds a required fix.
 
-- [ ] Inspect actual desktop, tablet, mobile and zoomed renders; execute file picking, selection, preview and export.
-- [ ] Obtain independent frozen-commit source review and a usability review, disclosing prior design-advice involvement and browser limitations.
-- [ ] Resolve material issues, rerun affected checks, and update documentation to the current decision while preserving history.
+- [x] Inspect actual desktop, tablet, mobile and zoomed renders; execute file picking, selection, preview and export.
+- [x] Obtain independent frozen-commit source review and a usability review, disclosing prior design-advice involvement and browser limitations.
+- [x] Resolve material issues, rerun affected checks, and update documentation to the current decision while preserving history.
 - [ ] Commit the reviewed implementation and create/attach a scoped PR with concrete validation evidence.
 
 ## Task 4: Deploy and verify production
@@ -63,3 +63,7 @@ Files: README and design/plan acceptance records; product files only if review f
 - Main advanced to `1df3bbf` (PR #18) during implementation. Merge its existing document-finishing features into this branch; retain crop-aware thumbnail rotation, output settings/preview, compression results, guarded shortcuts, translated labels and language preference. Incoming dependency/lockfile changes are retained unchanged. New editorial copy is translated and finishing surfaces use the warm tokens. A second clean Node 24 install passed after stopping this worktree's preview process, which had locked esbuild on Windows.
 - Integrated `3a8999f` passed 195 unit, production build, 53 Chromium browser and 54 local Cloudflare-hosting tests. Main's engine/domain/recovery code is unchanged. Source review confirmed integration fidelity and found a footer label-in-name mismatch; accessible labels now include the visible English/Thai wording and the new-tab notice. The shortcut disclosure measured 38px in a failing test, then passed at 44px with actual open/close interaction coverage.
 - Render review additionally found clipping of English in the mobile language picker and Latin tracking/font overrides in Thai headings/branding. The picker has more room, Thai eyebrows use normal spacing and the Latin QH PDF wordmark retains DM Serif. Current captures wait for the enabled primary CTA's color transition to finish. All review fixes are presentational.
+- Final product commit `354fd19b53e9be9e30ef9f4fcd42d1dad39f5136` passed 195 unit tests, TypeScript/Vite production build, 53 Chromium browser workflows and 54 local Cloudflare-hosting workflows on Node 24.21.0. Fixtures cover synthetic PDF/PNG/JPEG/WebP and encrypted PDFs, crop/decorations/compression, export/retry/cancellation, recovery and static-request guards. Canonical CI configuration and privacy assertions remain intact.
+- Source verdict PASS: reviewer had no maker involvement, inherited their earlier source-review context, shared filesystem/process state, and did not run interactions or edit files. Engine/domain/recovery and finishing logic match `1df3bbf`.
+- Render/usability verdict PASS: reviewer previously advised on the visual direction and inherited that context, but did not implement or edit. Reviewed actual Chromium renders at 1440/768/390/320, English/Thai, page/crop/export previews, passwords and focus. Interaction evidence comes from executed suites and Root's local BrowserOS selection/preview/export check, not screenshots alone.
+- Local acceptance is PASS for the documented scope. Safari/Firefox, screen readers, physical touch devices, native browser zoom and dark/high-contrast modes are not certified; the zoom check uses CSS content zoom. Deployment and live acceptance remain pending below.
