@@ -1,5 +1,7 @@
 # Quack & Honk PDF — Product & Architecture Design
 
+> **Visual direction superseded on 2026-10-05:** The palette, typography and UI composition now follow the [approved Editorial Stone design](2026-10-05-editorial-stone-ui-design.md). Product and local-processing principles below remain applicable; README records the implemented feature scope. The original specification is preserved as history.
+
 **Status:** Approved direction, written specification for implementation review  
 **Working title:** `quack-honk-pdf`  
 **Date:** 2026-09-12

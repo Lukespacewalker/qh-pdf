@@ -1,1 +1,47 @@
-:root{--bg:#F7EFDF;--surface:#FFFDFA;--muted:#F0E5D2;--text:#10271F;--secondary:#435F56;--border:#D8CDBA;--primary:#54796C;--accent:#B94D30;--danger:#B94735;--shadow:0 14px 38px rgba(16,39,31,.08)}*{box-sizing:border-box}html,body,#root{min-height:100%;margin:0}body{background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}button,input{font:inherit}button{cursor:pointer}:focus-visible{outline:3px solid #7998A8;outline-offset:2px}
+@font-face {
+  font-family: 'DM Serif Display';
+  src: url('../assets/fonts/dm-serif-display-latin-400-normal.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DM Sans';
+  src: url('../assets/fonts/dm-sans-latin-400-normal.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DM Sans';
+  src: url('../assets/fonts/dm-sans-latin-600-normal.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+:root {
+  --bg: #F3F0EC;
+  --surface: #FFFDFA;
+  --muted: #EAE4DD;
+  --text: #382F29;
+  --secondary: #6B5E54;
+  --border: #D9D1C8;
+  --control-border: #97867A;
+  --primary: #805A45;
+  --accent: #805A45;
+  --danger: #A13F32;
+  --display: 'DM Serif Display', Georgia, serif;
+  --body: 'DM Sans', 'Segoe UI', sans-serif;
+  --shadow: 0 8px 28px rgb(56 47 41 / 4%);
+}
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--body); font-size: 15px; -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+::selection { background: #DCCABC; color: var(--text); }
+h1, h2, h3, p { overflow-wrap: anywhere; }
+.icon { display: block; flex: 0 0 auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }

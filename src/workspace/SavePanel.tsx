@@ -5,6 +5,7 @@ import type { ImportedDocument, PdfEngine } from '../engine/PdfEngine';
 import { useI18n } from '../i18n/i18n';
 import { initialOutputDraft, OutputOptions, outputSettings } from './OutputOptions';
 import { OutputPreviewDialog } from './OutputPreviewDialog';
+import { Icon } from '../components/Icon';
 
 export type SaveTarget = 'all' | 'selected';
 
@@ -36,7 +37,7 @@ export function SavePanel({ count, selectedCount, locked, exporting, onSave, onC
     } catch (error) { setError(error instanceof Error ? error.message : 'Invalid output settings'); }
   }
   return <section className="save-panel" aria-labelledby="save-title">
-    <div className="save-summary"><div><h2 id="save-title">{t('Ready to save?')}</h2>
+    <div className="save-summary"><div><h2 id="save-title">{t('Save your document')}</h2>
       <p>{t(count === 1 ? 'Download all {count} page in the order shown.' : 'Download all {count} pages in the order shown.', { count })}</p></div>
       {exporting
         ? <button className="btn danger" onClick={onCancel}>{t('Cancel export')}</button>
@@ -44,7 +45,7 @@ export function SavePanel({ count, selectedCount, locked, exporting, onSave, onC
           {selectedCount > 0 && <button className="btn" disabled={locked} onClick={() => void submit('selected')}>
             {t(selectedCount === 1 ? 'Save {count} selected page' : 'Save {count} selected pages', { count: selectedCount })}
           </button>}
-          <button ref={saveButtonRef} className="btn primary" disabled={locked} onClick={() => void submit('all')}>{t('Save PDF')}</button>
+          <button ref={saveButtonRef} className="btn primary" disabled={locked} onClick={() => void submit('all')}><Icon name="download" />{t('Save PDF')}</button>
         </div>}
     </div>
     {error && <p ref={errorRef} className="notice" role="alert">{t(error)}</p>}

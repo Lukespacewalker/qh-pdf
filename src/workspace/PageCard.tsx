@@ -6,6 +6,7 @@ import type { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
 import type { WorkspacePage } from '../domain/workspace';
 import { useI18n } from '../i18n/i18n';
 import { useWorkspaceStore } from './useWorkspaceStore';
+import { Icon } from '../components/Icon';
 
 export function PageCard({ page, index, doc, engine, scheduler, disabled, selectionDisabled, last, onPreview }: {
   page: WorkspacePage; index: number; doc: ImportedDocument; engine: PdfEngine; scheduler: ThumbnailScheduler; disabled: boolean; selectionDisabled: boolean; last: boolean;
@@ -103,12 +104,11 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, select
       {previewFailed && <span role="status">{t('Preview unavailable')}</span>}
     </button>
     <div className="meta"><strong title={doc.fileName}>{doc.fileName}</strong><span>{page.rotation ? `${page.rotation}°` : ''}</span></div>
+    <div className="page-actions"><button className="btn" onClick={() => move(page.id, -1)} disabled={disabled || index === 0} aria-label={t('Move page {page} left', { page: index + 1 })}><Icon name="left" /></button>
     <button className="btn page-preview-button" type="button" disabled={disabled}
       aria-label={t('Preview page {page} from {file}', { page: index + 1, file: doc.fileName })}
-      onClick={event => onPreview(page.id, event.currentTarget)}>{t('Preview')}</button>
-    <div className="mini">
-      <button className="btn" onClick={() => move(page.id, -1)} disabled={disabled || index === 0} aria-label={t('Move page {page} left', { page: index + 1 })}>←</button>
-      <button className="btn" onClick={() => move(page.id, 1)} disabled={disabled || last} aria-label={t('Move page {page} right', { page: index + 1 })}>→</button>
+      onClick={event => onPreview(page.id, event.currentTarget)}><Icon name="eye" />{t('Preview')}</button>
+      <button className="btn" onClick={() => move(page.id, 1)} disabled={disabled || last} aria-label={t('Move page {page} right', { page: index + 1 })}><Icon name="right" /></button>
     </div>
   </article>;
 }

@@ -13,6 +13,8 @@ import { Capabilities } from './Capabilities';
 import { SavePanel, type SaveTarget } from './SavePanel';
 import { usePasswordImport } from './usePasswordImport';
 import { useWorkspaceStore } from './useWorkspaceStore';
+import { WelcomePanel } from './WelcomePanel';
+import { Icon } from '../components/Icon';
 import { CropDialog } from './CropDialog';
 import { workspaceShortcut } from './workspaceShortcut';
 import type { PdfOutputSettings } from '../domain/exportOptions';
@@ -146,53 +148,39 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
       void add(files);
     }} />;
   const historyActions = <div className="history-tools">
-    <button className="btn" onClick={store.undo} disabled={editLocked || !store.history.past.length}>{t('Undo')}</button>
-    <button className="btn" onClick={store.redo} disabled={editLocked || !store.history.future.length}>{t('Redo')}</button>
+    <button className="btn" onClick={store.undo} disabled={editLocked || !store.history.past.length}><Icon name="undo" />{t('Undo')}</button>
+    <button className="btn" onClick={store.redo} disabled={editLocked || !store.history.future.length}><Icon name="redo" />{t('Redo')}</button>
   </div>;
   const error = store.error && <div className="notice" role="alert">{t(store.error)}</div>;
 
   return <main className={`shell workspace-layout ${!ws.pages.length ? 'empty-wrap' : ''}`}>
     <div className="workspace-content">
       {!ws.pages.length ? <>
-        <section className={`drop ${drag ? 'drag' : ''}`}
-          onDragOver={event => { event.preventDefault(); if (!editLocked) setDrag(true); }}
-          onDragLeave={() => setDrag(false)}
-          onDrop={event => { event.preventDefault(); setDrag(false); void add(Array.from(event.dataTransfer.files)); }}>
-          <MascotState state={store.busy ? 'working' : 'empty'} alt={store.busy ? t('Quack working') : t('Quack welcoming you to the workspace')} />
-          <h1>{t('Combine files. Arrange pages.')}</h1>
-          <p className="drop-intro">{t('Combine documents, rearrange pages, or turn pictures into a PDF.')}<br className="desktop-break" /> {t('Drop your files here to get started.')}</p>
-          {error}
-          <button className="btn primary file-btn" aria-describedby="supported-formats" onClick={() => input.current?.click()} disabled={editLocked}>
-            {store.busy ? t('Preparing pages…') : t('Choose files')}
-          </button>
-          <p className="formats" id="supported-formats">PDF · JPG / JPEG · PNG · WebP</p>
-          <div className="privacy">{t('Your documents stay on this device.')}</div>
-          <p className="free-note">{t('Free to use. No account needed.')}</p>
-          {(store.history.past.length > 0 || store.history.future.length > 0) &&
-            <div aria-label={t('Document history')}>{historyActions}</div>}
-        </section>
+        <WelcomePanel busy={store.busy} locked={editLocked} drag={drag} onChoose={() => input.current?.click()}
+          onDragChange={setDrag} onDrop={files => void add(files)} error={error}
+          history={(store.history.past.length > 0 || store.history.future.length > 0) ? historyActions : null} />
         <Capabilities />
       </> : <>
         <div className="head">
-          <div><h1>{t('Your document')}</h1><p className="sub">{t('{count} pages', { count: ws.pages.length })}</p></div>
-          <button className="btn" onClick={() => input.current?.click()} disabled={editLocked}>+ {t('Add files')}</button>
+          <div><p className="eyebrow">{t('Document workspace')}</p><h1>{t('Your document')}</h1><p className="sub">{t('{count} pages', { count: ws.pages.length })}</p></div>
+          <button className="btn add-files" onClick={() => input.current?.click()} disabled={editLocked}><Icon name="add" />{t('Add files')}</button>
         </div>
         {error}
         <div className="page-editing-region">
         <div className="toolbar" role="group" aria-label={t('Page editing tools')}>
           {historyActions}
           <div className="selection-tools" role="group" aria-label={t('Page selection tools')}>
-            <button className="btn" onClick={store.selectAll} disabled={editLocked || selected === ws.pages.length}>{t('Select all')}</button>
-            <button className="btn" onClick={store.deselectAll} disabled={editLocked || !selected}>{t('Deselect all')}</button>
+            <button className="btn" onClick={store.selectAll} disabled={editLocked || selected === ws.pages.length}><Icon name="select" />{t('Select all')}</button>
+            <button className="btn" onClick={store.deselectAll} disabled={editLocked || !selected}><Icon name="deselect" />{t('Deselect all')}</button>
             <output className="selection-count" role="status" aria-label={t('Selected pages')}>{t('{selected} of {total} selected', { selected, total: ws.pages.length })}</output>
           </div>
           <span className="spacer" />
           <div className="edit-tools">
-            <button className="btn" aria-label={t('Rotate left')} onClick={() => store.rotate(-90)} disabled={editLocked || !selected}>↶ {t('Rotate')}</button>
-            <button className="btn" aria-label={t('Rotate right')} onClick={() => store.rotate(90)} disabled={editLocked || !selected}>{t('Rotate')} ↷</button>
-            <button className="btn" onClick={store.duplicate} disabled={editLocked || !selected}>{t('Duplicate')}</button>
-            <button className="btn danger" onClick={store.remove} disabled={editLocked || !selected}>{t('Delete')}</button>
-            <button className="btn" onClick={event => setCropOpener(event.currentTarget)} disabled={editLocked || !selected}>{t('Crop')}</button>
+            <button className="btn" aria-label={t('Rotate left')} onClick={() => store.rotate(-90)} disabled={editLocked || !selected}><Icon name="rotate-left" />{t('Rotate left')}</button>
+            <button className="btn" aria-label={t('Rotate right')} onClick={() => store.rotate(90)} disabled={editLocked || !selected}><Icon name="rotate-right" />{t('Rotate right')}</button>
+            <button className="btn" onClick={store.duplicate} disabled={editLocked || !selected}><Icon name="copy" />{t('Duplicate')}</button>
+            <button className="btn danger" onClick={store.remove} disabled={editLocked || !selected}><Icon name="trash" />{t('Delete')}</button>
+            <button className="btn" onClick={event => setCropOpener(event.currentTarget)} disabled={editLocked || !selected}><Icon name="crop" />{t('Crop')}</button>
           </div>
         </div>
         <p className="arrange-hint">{t('Click a page to select it, use Shift for a range, or Ctrl / Command to add pages. The checkbox adds a page on touch and keyboard. Drag the handle or use arrows to reorder.')}</p>

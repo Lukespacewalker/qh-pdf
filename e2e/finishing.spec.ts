@@ -187,6 +187,28 @@ test('shortcuts edit and save pages but preserve native editing and modal safegu
 });
 
 test('compression levels preserve numbered text and crop, reduce eligible images and run before password protection', async ({ page }) => {
+  // Compare each result with its own assembled input. Separately assembled
+  // exports have fresh PDF metadata, whose compressed length can differ.
+  await page.addInitScript(() => {
+    const inputs: { level: string; byteLength: number }[] = [];
+    Object.defineProperty(window, '__compressionInputs', { value: inputs });
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      private readonly compression: boolean;
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super(url, options);
+        this.compression = String(url).includes('PdfCompression.worker');
+      }
+      postMessage(message: unknown, transferOrOptions?: Transferable[] | StructuredSerializeOptions) {
+        if (this.compression) {
+          const request = message as { level: string; bytes: ArrayBuffer };
+          inputs.push({ level: request.level, byteLength: request.bytes.byteLength });
+        }
+        if (Array.isArray(transferOrOptions)) super.postMessage(message, transferOrOptions);
+        else super.postMessage(message, transferOrOptions);
+      }
+    };
+  });
   await page.goto('/');
   const png = await page.evaluate(() => {
     const canvas = document.createElement('canvas'); canvas.width = 900; canvas.height = 700;
@@ -212,13 +234,22 @@ test('compression levels preserve numbered text and crop, reduce eligible images
   for (const level of ['off', 'lossless', 'balanced', 'small']) {
     await page.getByRole('combobox', { name: 'Compression level', exact: true }).selectOption(level);
     const bytes = await downloadBytes(page); outputs.set(level, bytes);
+    const inputs = await page.evaluate(() => (window as typeof window & {
+      __compressionInputs: { level: string; byteLength: number }[];
+    }).__compressionInputs);
+    if (level === 'off') expect(inputs).toHaveLength(0);
+    else {
+      const job = inputs.filter(input => input.level === level);
+      expect(job).toHaveLength(1);
+      expect(job[0].byteLength).toBeGreaterThan(0);
+      expect(bytes.length).toBeLessThanOrEqual(job[0].byteLength);
+    }
     const pdf = await PDFDocument.load(bytes);
     expect(pdf.getPage(0).getCropBox()).toEqual({ x: 12, y: 23, width: 500, height: 700 });
     expect(pdf.getPage(0).getRotation().angle).toBe(90);
     const content = (await texts(pdf))[0];
     expect(content.join('')).toContain('Selectable synthetic text'); expect(content).toContain('1');
   }
-  expect(outputs.get('lossless')!.length).toBeLessThanOrEqual(outputs.get('off')!.length);
   expect(outputs.get('balanced')!.length).toBeLessThan(outputs.get('lossless')!.length * 0.6);
   expect(outputs.get('small')!.length).toBeLessThan(outputs.get('balanced')!.length * 0.85);
   await page.getByRole('checkbox', { name: 'Require a password to open the saved PDF' }).check();

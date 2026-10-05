@@ -3,6 +3,7 @@ import { BrowserPdfEngine } from '../engine/BrowserPdfEngine';
 import { I18nProvider, useI18n } from '../i18n/i18n';
 import '../i18n/i18n.css';
 import { WorkspaceScreen } from '../workspace/WorkspaceScreen';
+import { Icon } from '../components/Icon';
 
 function AppContent() {
   const engine = useMemo(() => new BrowserPdfEngine(), []);
@@ -10,12 +11,13 @@ function AppContent() {
 
   return <div>
     <header className="topbar">
-      <div className="brand">
+      <div className="brand" aria-label="Quack & Honk PDF">
         <img className="brand-icon" src={`${import.meta.env.BASE_URL}app-icon.svg`} alt="" />
-        <span>Quack & Honk PDF</span>
+        <span>QH PDF</span>
+        <span className="brand-byline">By Quack &amp; Honk</span>
       </div>
       <div className="topbar-meta">
-        <div className="sub">{t('Runs in your browser')}</div>
+        <div className="header-privacy"><Icon name="lock" /><span>{t('Runs in your browser')}</span></div>
         <label className="language-picker">
           <span>{t('Language')}</span>
           <select value={language} onChange={event => setLanguage(event.target.value as 'en' | 'th')}>
