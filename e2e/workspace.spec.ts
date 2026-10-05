@@ -41,14 +41,14 @@ async function expectThumbnails(page: Page, count: number) {
   }
 }
 
-test('all seven locally served mascot files decode and the empty state shows Quack arranging PDFs', async ({ page }) => {
+test('all seven locally served mascot files decode and the empty state introduces Quack and Honk arranging PDFs', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('Runs in your browser', { exact: true })).toBeVisible();
   await expect(page.getByText('Private · Browser-based', { exact: true })).toHaveCount(0);
   await expect.poll(() => page.locator('.mascot').evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
-  await expect(page.locator('.mascot')).toHaveAttribute('src', '/mascots/quack-organizing-pdf.webp');
-  await expect(page.locator('.mascot')).toHaveAttribute('alt', 'Quack arranging PDF pages');
-  const names = ['honk-happy', 'honk-error', 'honk-worried-warning', 'quack-hello', 'quack-working', 'quack-empty-state', 'quack-organizing-pdf'];
+  await expect(page.locator('.mascot')).toHaveAttribute('src', '/mascots/quack-honk-pdf-hero.webp');
+  await expect(page.locator('.mascot')).toHaveAttribute('alt', 'Quack and Honk arranging PDF pages together');
+  const names = ['honk-happy', 'honk-error', 'honk-worried-warning', 'quack-hello', 'quack-working', 'quack-empty-state', 'quack-honk-pdf-hero'];
   for (const name of names) {
     expect(await page.evaluate(async name => {
       const image = new Image();

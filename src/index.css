@@ -39,6 +39,7 @@
 .drop.drag { background: #ECE2D8; border-color: var(--primary); }
 .drop.drag::before { border-color: var(--primary); border-width: 2px; }
 .drop .mascot { margin: 0 auto 18px; width: 120px; height: 120px; }
+.drop .mascot-welcome { width: 220px; max-width: 100%; }
 .drop h2 { margin: 0; font-family: var(--display); font-size: clamp(30px, 3vw, 42px); font-weight: 400; letter-spacing: -.025em; line-height: 1.15; }
 .drop-intro { margin: 10px 0 22px; color: var(--secondary); font-size: 15px; line-height: 1.5; }
 .file-btn { min-height: 52px; width: min(320px, 100%); font-size: 17px; }
@@ -173,6 +174,7 @@
   .welcome-reassurance { margin-top: 16px; }
   .drop { padding: 24px; }
   .drop .mascot { width: 90px; height: 90px; margin-bottom: 10px; }
+  .drop .mascot-welcome { width: 180px; }
   .drop h2 { font-size: 34px; }
   .drop-intro { margin: 8px 0 16px; }
   .save-summary { align-items: flex-start; }
@@ -191,6 +193,7 @@
   .welcome-reassurance { font-size: 12px; margin-top: 16px; }
   .welcome-copy .eyebrow { font-size: 10px; letter-spacing: .18em; }
   .drop .mascot { width: 90px; height: 90px; }
+  .drop .mascot-welcome { width: 180px; }
   .drop h2 { font-size: 30px; }
   .drop-intro { font-size: 13px; }
   .file-btn { font-size: 15px; min-height: 48px; }

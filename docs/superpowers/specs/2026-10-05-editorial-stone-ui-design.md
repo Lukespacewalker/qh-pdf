@@ -2,7 +2,7 @@
 
 **Status:** User-approved visual direction; implementation and deployment authorized on 2026-10-05.
 
-> **Welcome artwork update, 2026-10-05:** The user's subsequent request for Quack doing a PDF task supersedes only the original empty-state artwork requirement below. The welcome panel now uses the transparent [PDF-arranging Quack illustration](../../design/quack-organizing-pdf.md); the six supplied poses remain unchanged. Layout, sizing, controls and other mascot states retain the approved direction. The original decision below is preserved as history.
+> **Welcome artwork update, 2026-10-05:** The user's subsequent request for a hero introducing both Quack and Honk through a shared PDF task supersedes only the original empty-state artwork requirement below. The welcome panel now uses the transparent [Quack & Honk PDF hero](../../design/quack-honk-pdf-hero.md); the six supplied poses remain unchanged. The hero widens to show both characters while retaining the original image height, layout, controls and other mascot states. The original decision below is preserved as history.
 
 ## Direction
 

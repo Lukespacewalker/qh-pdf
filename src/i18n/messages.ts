@@ -217,7 +217,7 @@ export const thaiMessages: Readonly<Record<string, string>> = {
   Undo: 'เลิกทำ',
   Redo: 'ทำซ้ำ',
   'Quack working': 'Quack กำลังทำงาน',
-  'Quack arranging PDF pages': 'Quack กำลังจัดเรียงหน้า PDF',
+  'Quack and Honk arranging PDF pages together': 'Quack และ Honk กำลังช่วยกันจัดเรียงหน้า PDF',
   'Combine files. Arrange pages.': 'รวมไฟล์ จัดเรียงหน้า',
   'Combine documents, rearrange pages, or turn pictures into a PDF.': 'รวมเอกสาร จัดเรียงหน้าใหม่ หรือเปลี่ยนรูปภาพเป็น PDF',
   'Drop your files here to get started.': 'ลากไฟล์มาวางที่นี่เพื่อเริ่มต้น',

@@ -1,5 +1,7 @@
 # Quack arranging PDF pages
 
+> **Superseded on 2026-10-05:** The user subsequently requested both characters in the hero so visitors can recognize Quack and Honk. The [paired hero brief](quack-honk-pdf-hero.md) is the current decision. The single-character asset was replaced; this initial brief and prompt are preserved as history.
+
 On 2026-10-05, the user requested a newly generated mascot for the welcome panel, showing Quack doing something with PDF files. This supersedes the welcome-only requirement to use the original empty-state pose in the [Editorial Stone design](../superpowers/specs/2026-10-05-editorial-stone-ui-design.md). All original mascot files remain unchanged.
 
 The selected illustration shows Quack aligning a page with a compact stack labeled PDF. It uses the supplied character's cream plumage, orange bill and feet, green collar and softly painted style. The layout remains 120 pixels on desktop and 90 pixels on smaller screens, with a visible file picker and localized descriptive alt text.

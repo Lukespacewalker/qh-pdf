@@ -71,7 +71,7 @@ Recovery stores the original source files and current page edits atomically, not
 
 Clearing overwrites the recovery record with an empty revision marker containing no documents or page edits. This prevents a stale tab from recreating cleared content, including tabs opened before the first save.
 
-All six original mascot assets and the PDF-arranging Quack welcome illustration are included and served locally. No ZIP extraction or Python restoration step is required.
+All six original mascot assets and the Quack & Honk PDF welcome illustration are included and served locally. No ZIP extraction or Python restoration step is required.
 
 ## Hosting
 
@@ -134,7 +134,7 @@ The initial application chunk excludes PDF.js, fontkit, the decoration font and 
 
 ## Brand assets
 
-The three restored poses (`quack-empty-state`, `quack-working`, `honk-error`) are faithful WebP derivatives of the supplied PNG artwork, resized proportionally to 192 pixels with optimized transparency. Existing `quack-hello`, `honk-happy` and `honk-worried-warning` derivatives remain included. Their checksums were validated during transfer. On 2026-10-05, the user requested a new welcome illustration of Quack arranging PDF pages; `quack-organizing-pdf.webp` is a transparent 320-pixel generated variant based on the supplied character references. The original six assets remain unchanged; browser tests decode all seven files. [Generation brief and provenance](docs/design/quack-organizing-pdf.md) record this narrow artwork decision. Noto Sans Thai Looped Regular v2.000 is bundled for PDF decorations; [font provenance and OFL notice](public/licenses/fonts/README.md) record its source and checksum. It is embedded into exports and is not a remote font.
+The three restored poses (`quack-empty-state`, `quack-working`, `honk-error`) are faithful WebP derivatives of the supplied PNG artwork, resized proportionally to 192 pixels with optimized transparency. Existing `quack-hello`, `honk-happy` and `honk-worried-warning` derivatives remain included. Their checksums were validated during transfer. On 2026-10-05, the user requested a hero illustration introducing both Quack and Honk through a shared PDF task; `quack-honk-pdf-hero.webp` is a transparent generated variant based on the supplied character references. The original six assets remain unchanged; browser tests decode all seven files. [Generation brief and provenance](docs/design/quack-honk-pdf-hero.md) record this narrow artwork decision. Noto Sans Thai Looped Regular v2.000 is bundled for PDF decorations; [font provenance and OFL notice](public/licenses/fonts/README.md) record its source and checksum. It is embedded into exports and is not a remote font.
 
 The UI uses the approved Editorial Stone direction: mineral-white surfaces, espresso text, earth-brown actions and fine rules. The homepage pairs an editorial introduction with the file drop zone; the active workspace prioritizes pages and visible editing controls. DM Serif Display and DM Sans Latin WOFF2 fonts are bundled locally through Vite. No external font requests are made; licenses and source information are included in the repository. Browser tests cover the initial file picker at 320, 390 and 768 pixels, keyboard activation, locally decoded fonts, long filenames and 200% CSS content zoom. CSS content zoom is not a certification of every browser's native zoom behavior.
 
