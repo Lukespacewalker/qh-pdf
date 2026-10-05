@@ -26,12 +26,19 @@ async function exportPdf(page: Page) {
   return (await downloadPdf(page, 'Save PDF')).pdf;
 }
 async function expectThumbnails(page: Page, count: number) {
-  const images = page.locator('article .page-thumbnail img');
-  await expect(images).toHaveCount(count, { timeout: renderTimeout });
-  await expect.poll(() => images.evaluateAll(nodes => nodes.every(node => {
-    const image = node as HTMLImageElement;
-    return image.complete && image.naturalWidth > 0 && image.src.startsWith('blob:');
-  })), { timeout: renderTimeout }).toBe(true);
+  const cards = page.locator('article');
+  await expect(cards).toHaveCount(count, { timeout: renderTimeout });
+  // Thumbnails are viewport-gated. Inspect every requested page in view,
+  // regardless of how many rows the responsive grid needs.
+  for (let index = 0; index < count; index += 1) {
+    const card = cards.nth(index);
+    await card.scrollIntoViewIfNeeded();
+    const image = card.locator('.page-thumbnail img');
+    await expect(image).toBeVisible({ timeout: renderTimeout });
+    await expect.poll(() => image.evaluate((node: HTMLImageElement) =>
+      node.complete && node.naturalWidth > 0 && node.src.startsWith('blob:'),
+    ), { timeout: renderTimeout }).toBe(true);
+  }
 }
 
 test('all six locally served mascot files decode and the empty state uses a real image', async ({ page }) => {
@@ -54,7 +61,7 @@ test('brand discovery uses one bottom banner link and a local mascot', async ({ 
   await page.goto('/');
 
   const header = page.locator('header');
-  await expect(header.getByText('Quack & Honk PDF', { exact: true })).toBeVisible();
+  await expect(header.getByText('QH PDF', { exact: true })).toBeVisible();
   const appIcon = header.locator('img[src$="/app-icon.svg"]');
   await expect(appIcon).toHaveAttribute('alt', '');
   await expect.poll(() => appIcon.evaluate(
@@ -127,11 +134,14 @@ test('selection controls support touch-friendly toggles, Shift ranges, all/none 
   await page.goto('/');
   await page.locator('input[type=file]').setInputFiles(await pdfFile('select.pdf', [110, 220, 330, 440, 550]));
   await expectThumbnails(page, 5);
-  expect(await page.locator('.num').evaluateAll(badges => badges.every(badge => {
-    const rect = badge.getBoundingClientRect();
-    const topmost = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-    return topmost === badge || badge.contains(topmost);
-  }))).toBe(true);
+  for (const badge of await page.locator('.num').all()) {
+    await badge.evaluate(node => node.scrollIntoView({ block: 'center' }));
+    expect(await badge.evaluate(node => {
+      const rect = node.getBoundingClientRect();
+      const topmost = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return topmost === node || node.contains(topmost);
+    })).toBe(true);
+  }
   await expect(page.locator('.head .sub')).toHaveText('5 pages');
   const selectionStatus = page.getByRole('status', { name: 'Selected pages', exact: true });
   await expect(selectionStatus).toHaveText('0 of 5 selected');

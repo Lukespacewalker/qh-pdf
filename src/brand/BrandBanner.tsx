@@ -1,9 +1,8 @@
 export function BrandBanner() {
   return <section className="brand-banner" aria-labelledby="brand-banner-label">
     <div className="brand-banner-copy">
-      <p className="brand-banner-eyebrow" id="brand-banner-label">More from Quack &amp; Honk</p>
-      <h2>Tools with a little more quack.</h2>
-      <p>QH PDF is one small thing from Quack &amp; Honk. Visit our main site to see what else we’re making.</p>
+      <h2 id="brand-banner-label" className="sr-only">More from Quack &amp; Honk</h2>
+      <p>Made with care by <strong>Quack &amp; Honk</strong></p>
       <a
         className="brand-banner-link"
         href="https://quackandhonk.com"
@@ -11,7 +10,7 @@ export function BrandBanner() {
         rel="noopener noreferrer"
         aria-label="Visit quackandhonk.com (opens in a new tab)"
       >
-        Visit quackandhonk.com <span aria-hidden="true">↗</span>
+        Explore Quack &amp; Honk <span aria-hidden="true">↗</span>
       </a>
     </div>
     <img

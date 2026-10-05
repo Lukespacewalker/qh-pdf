@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from '../components/Icon';
 
 export type SaveTarget = 'all' | 'selected';
 
@@ -19,7 +20,7 @@ export function SavePanel({ count, selectedCount, locked, exporting, onSave, onC
     if (await onSave(target, protect ? password : undefined)) { setPassword(''); setConfirm(''); }
   }
   return <section className="save-panel" aria-labelledby="save-title">
-    <div className="save-summary"><div><h2 id="save-title">Ready to save?</h2>
+    <div className="save-summary"><div><h2 id="save-title">Save your document</h2>
       <p>Download all {count} {count === 1 ? 'page' : 'pages'} in the order shown.</p></div>
       {exporting
         ? <button className="btn danger" onClick={onCancel}>Cancel export</button>
@@ -27,7 +28,7 @@ export function SavePanel({ count, selectedCount, locked, exporting, onSave, onC
           {selectedCount > 0 && <button className="btn" disabled={locked} onClick={() => void submit('selected')}>
             Save {selectedCount} selected {selectedCount === 1 ? 'page' : 'pages'}
           </button>}
-          <button className="btn primary" disabled={locked} onClick={() => void submit('all')}>Save PDF</button>
+          <button className="btn primary" disabled={locked} onClick={() => void submit('all')}><Icon name="download" />Save PDF</button>
         </div>}
     </div>
     <label className="check-label"><input type="checkbox" checked={protect} disabled={locked}

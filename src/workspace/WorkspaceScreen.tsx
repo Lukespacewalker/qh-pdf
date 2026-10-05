@@ -13,6 +13,8 @@ import { Capabilities } from './Capabilities';
 import { SavePanel, type SaveTarget } from './SavePanel';
 import { usePasswordImport } from './usePasswordImport';
 import { useWorkspaceStore } from './useWorkspaceStore';
+import { WelcomePanel } from './WelcomePanel';
+import { Icon } from '../components/Icon';
 
 function download(blob: Blob, filename: string) {
   const link = document.createElement('a');
@@ -114,51 +116,37 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
       void add(files);
     }} />;
   const historyActions = <div className="history-tools">
-    <button className="btn" onClick={store.undo} disabled={editLocked || !store.history.past.length}>Undo</button>
-    <button className="btn" onClick={store.redo} disabled={editLocked || !store.history.future.length}>Redo</button>
+    <button className="btn" onClick={store.undo} disabled={editLocked || !store.history.past.length}><Icon name="undo" />Undo</button>
+    <button className="btn" onClick={store.redo} disabled={editLocked || !store.history.future.length}><Icon name="redo" />Redo</button>
   </div>;
   const error = store.error && <div className="notice" role="alert">{store.error}</div>;
 
   return <main className={`shell workspace-layout ${!ws.pages.length ? 'empty-wrap' : ''}`}>
     <div className="workspace-content">
       {!ws.pages.length ? <>
-        <section className={`drop ${drag ? 'drag' : ''}`}
-          onDragOver={event => { event.preventDefault(); if (!editLocked) setDrag(true); }}
-          onDragLeave={() => setDrag(false)}
-          onDrop={event => { event.preventDefault(); setDrag(false); void add(Array.from(event.dataTransfer.files)); }}>
-          <MascotState state={store.busy ? 'working' : 'empty'} alt={store.busy ? 'Quack working' : 'Quack welcoming you to the workspace'} />
-          <h1>Combine files. Arrange pages.</h1>
-          <p className="drop-intro">Combine documents, rearrange pages, or turn pictures into a PDF.<br className="desktop-break" /> Drop your files here to get started.</p>
-          {error}
-          <button className="btn primary file-btn" aria-describedby="supported-formats" onClick={() => input.current?.click()} disabled={editLocked}>
-            {store.busy ? 'Preparing pages…' : 'Choose files'}
-          </button>
-          <p className="formats" id="supported-formats">PDF · JPG / JPEG · PNG · WebP</p>
-          <div className="privacy">Your documents stay on this device.</div>
-          <p className="free-note">Free to use. No account needed.</p>
-          {(store.history.past.length > 0 || store.history.future.length > 0) &&
-            <div aria-label="Document history">{historyActions}</div>}
-        </section>
+        <WelcomePanel busy={store.busy} locked={editLocked} drag={drag} onChoose={() => input.current?.click()}
+          onDragChange={setDrag} onDrop={files => void add(files)} error={error}
+          history={(store.history.past.length > 0 || store.history.future.length > 0) ? historyActions : null} />
         <Capabilities />
       </> : <>
         <div className="head">
-          <div><h1>Your document</h1><p className="sub">{ws.pages.length} pages</p></div>
-          <button className="btn" onClick={() => input.current?.click()} disabled={editLocked}>+ Add files</button>
+          <div><p className="eyebrow">Document workspace</p><h1>Your document</h1><p className="sub">{ws.pages.length} pages</p></div>
+          <button className="btn add-files" onClick={() => input.current?.click()} disabled={editLocked}><Icon name="add" />Add files</button>
         </div>
         {error}
         <div className="toolbar" role="group" aria-label="Page editing tools">
           {historyActions}
           <div className="selection-tools" role="group" aria-label="Page selection tools">
-            <button className="btn" onClick={store.selectAll} disabled={editLocked || selected === ws.pages.length}>Select all</button>
-            <button className="btn" onClick={store.deselectAll} disabled={editLocked || !selected}>Deselect all</button>
+            <button className="btn" onClick={store.selectAll} disabled={editLocked || selected === ws.pages.length}><Icon name="select" />Select all</button>
+            <button className="btn" onClick={store.deselectAll} disabled={editLocked || !selected}><Icon name="deselect" />Deselect all</button>
             <output className="selection-count" role="status" aria-label="Selected pages">{selected} of {ws.pages.length} selected</output>
           </div>
           <span className="spacer" />
           <div className="edit-tools">
-            <button className="btn" aria-label="Rotate left" onClick={() => store.rotate(-90)} disabled={editLocked || !selected}>↶ Rotate</button>
-            <button className="btn" aria-label="Rotate right" onClick={() => store.rotate(90)} disabled={editLocked || !selected}>Rotate ↷</button>
-            <button className="btn" onClick={store.duplicate} disabled={editLocked || !selected}>Duplicate</button>
-            <button className="btn danger" onClick={store.remove} disabled={editLocked || !selected}>Delete</button>
+            <button className="btn" aria-label="Rotate left" onClick={() => store.rotate(-90)} disabled={editLocked || !selected}><Icon name="rotate-left" />Rotate left</button>
+            <button className="btn" aria-label="Rotate right" onClick={() => store.rotate(90)} disabled={editLocked || !selected}><Icon name="rotate-right" />Rotate right</button>
+            <button className="btn" onClick={store.duplicate} disabled={editLocked || !selected}><Icon name="copy" />Duplicate</button>
+            <button className="btn danger" onClick={store.remove} disabled={editLocked || !selected}><Icon name="trash" />Delete</button>
           </div>
         </div>
         <p className="arrange-hint">Click a page to select it, use Shift for a range, or Ctrl / Command to add pages. The checkbox adds a page on touch and keyboard. Drag the handle or use arrows to reorder.</p>

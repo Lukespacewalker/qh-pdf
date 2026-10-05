@@ -118,7 +118,7 @@ This is still a prototype:
 - Editing creates a new PDF. Preservation of interactive forms, signatures, document-level bookmarks, accessibility tags and attachments is not guaranteed.
 - Complex font/CMap and image-decoder cases, malformed-document fuzzing, large-file limits, Safari and Firefox require further validation.
 - A failed dynamic PDF.js module request leaves the workspace usable and the application retries its loader call. Chromium 153 kept an HTTP 503 module fetch failed in the tab's native module cache, so a same-tab retry could not make a second request in that tested case. The visible error advises saving open work before manually reloading; the app does not reload automatically or evaluate cache-busted module copies.
-- Mobile has the focused preview, labeled additive-selection checkboxes, drag handles and non-drag controls. Comprehensive keyboard shortcuts, Thai UI, dark mode and full brand typography remain planned work.
+- Mobile has the focused preview, labeled additive-selection checkboxes, drag handles and non-drag controls. Comprehensive keyboard shortcuts, Thai UI and dark mode remain planned work.
 - CSS is currently used directly; the planned Tailwind migration has not been done.
 - No security certification, compliance status or universal privacy guarantee is claimed.
 
@@ -126,11 +126,15 @@ The initial application chunk no longer includes PDF.js. The deferred renderer, 
 
 ## Brand assets
 
-The three restored poses (`quack-empty-state`, `quack-working`, `honk-error`) are faithful WebP derivatives of the supplied PNG artwork, resized proportionally to 192 pixels with optimized transparency. Existing `quack-hello`, `honk-happy` and `honk-worried-warning` derivatives remain included. Their checksums were validated during transfer; browser tests also decode all six files. No font files are included.
+The three restored poses (`quack-empty-state`, `quack-working`, `honk-error`) are faithful WebP derivatives of the supplied PNG artwork, resized proportionally to 192 pixels with optimized transparency. Existing `quack-hello`, `honk-happy` and `honk-worried-warning` derivatives remain included. Their checksums were validated during transfer; browser tests also decode all six files.
+
+The UI uses the approved Editorial Stone direction: mineral-white surfaces, espresso text, earth-brown actions and fine rules. The homepage pairs an editorial introduction with the file drop zone; the active workspace prioritizes pages and visible editing controls. DM Serif Display and DM Sans Latin WOFF2 fonts are bundled locally through Vite. No external font requests are made; licenses and source information are included in the repository. Browser tests cover the initial file picker at 320, 390 and 768 pixels, keyboard activation, locally decoded fonts, long filenames and 200% CSS content zoom. CSS content zoom is not a certification of every browser's native zoom behavior.
 
 ## Design references
 
-- [Product and architecture design](docs/superpowers/specs/2026-09-12-quack-honk-pdf-design.md)
+- [Current Editorial Stone visual direction](docs/superpowers/specs/2026-10-05-editorial-stone-ui-design.md)
+- [Editorial Stone implementation and deployment plan](docs/superpowers/plans/2026-10-05-editorial-stone-ui.md)
+- [Original product and architecture design](docs/superpowers/specs/2026-09-12-quack-honk-pdf-design.md)
 - [Original implementation plan](docs/superpowers/plans/2026-09-12-quack-honk-pdf-prototype.md)
 
 These documents describe the target V1. The current scope and limitations above take precedence when describing this prototype's status.
