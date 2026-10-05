@@ -40,7 +40,7 @@ Files: README and design/plan acceptance records; product files only if review f
 - [x] Inspect actual desktop, tablet, mobile and zoomed renders; execute file picking, selection, preview and export.
 - [x] Obtain independent frozen-commit source review and a usability review, disclosing prior design-advice involvement and browser limitations.
 - [x] Resolve material issues, rerun affected checks, and update documentation to the current decision while preserving history.
-- [ ] Commit the reviewed implementation and create/attach a scoped PR with concrete validation evidence.
+- [x] Commit the reviewed implementation and create/attach a scoped PR with concrete validation evidence.
 
 ## Task 4: Deploy and verify production
 
@@ -67,3 +67,4 @@ Files: README and design/plan acceptance records; product files only if review f
 - Source verdict PASS: reviewer had no maker involvement, inherited their earlier source-review context, shared filesystem/process state, and did not run interactions or edit files. Engine/domain/recovery and finishing logic match `1df3bbf`.
 - Render/usability verdict PASS: reviewer previously advised on the visual direction and inherited that context, but did not implement or edit. Reviewed actual Chromium renders at 1440/768/390/320, English/Thai, page/crop/export previews, passwords and focus. Interaction evidence comes from executed suites and Root's local BrowserOS selection/preview/export check, not screenshots alone.
 - Local acceptance is PASS for the documented scope. Safari/Firefox, screen readers, physical touch devices, native browser zoom and dark/high-contrast modes are not certified; the zoom check uses CSS content zoom. Deployment and live acceptance remain pending below.
+- [PR #19](https://github.com/Lukespacewalker/qh-pdf/pull/19) is attached to the task. Its first Verify run failed one incoming compression test: separate Off and Lossless exports differed by one byte. Fresh PDF metadata timestamps are independently compressed; a source investigation reproduced 575/576 bytes for identical content with different seconds. The production adapter already prevents growth against its own input. The test now observes input length before native worker transfer and asserts exact non-growth for every compressed level against that same job. Image-reduction ratios, content/geometry/password checks and privacy guards remain unchanged. The affected real workflow passed three repeats; CI will verify the final revision.
