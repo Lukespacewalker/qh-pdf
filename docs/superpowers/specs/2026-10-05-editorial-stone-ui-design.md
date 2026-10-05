@@ -2,6 +2,8 @@
 
 **Status:** User-approved visual direction; implementation and deployment authorized on 2026-10-05.
 
+> **Welcome artwork update, 2026-10-05:** The user's subsequent request for Quack doing a PDF task supersedes only the original empty-state artwork requirement below. The welcome panel now uses the transparent [PDF-arranging Quack illustration](../../design/quack-organizing-pdf.md); the six supplied poses remain unchanged. Layout, sizing, controls and other mascot states retain the approved direction. The original decision below is preserved as history.
+
 ## Direction
 
 Use the selected second homepage concept: Editorial Modern typography with mineral-white stone, espresso text and earth-brown actions. The selected ImageGen reference is [the homepage concept](../../design/editorial-stone-home.png). This direction supersedes the visual palette, typography and layout in the [original design](2026-09-12-quack-honk-pdf-design.md); its product, accessibility and local-processing boundaries remain in force.

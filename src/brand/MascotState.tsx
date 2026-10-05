@@ -1,6 +1,6 @@
 type State = 'empty' | 'working' | 'warning' | 'error' | 'success';
 const files: Record<State, string> = {
-  empty: 'quack-empty-state.webp',
+  empty: 'quack-organizing-pdf.webp',
   working: 'quack-working.webp',
   warning: 'honk-worried-warning.webp',
   error: 'honk-error.webp',
