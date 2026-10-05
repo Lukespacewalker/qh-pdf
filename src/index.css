@@ -265,7 +265,7 @@
 
 /* Document finishing and keyboard help */
 .shortcut-help { font-size: 14px; color: var(--secondary); }
-.shortcut-help summary { cursor: pointer; padding: 10px 0; font-weight: 750; }
+.shortcut-help summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 600; }
 .shortcut-help dl { display: grid; grid-template-columns: auto 1fr; gap: 10px 20px; }
 .shortcut-help dd { margin: 0; }
 .output-options { margin: 22px 0 18px; padding: 0; border: 0; min-width: 0; }

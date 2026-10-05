@@ -71,7 +71,8 @@ test('brand discovery uses one bottom banner link and a local mascot', async ({ 
 
   const banner = page.getByRole('region', { name: 'More from Quack & Honk', exact: true });
   await expect(banner).toBeVisible();
-  const link = banner.getByRole('link', { name: 'Visit quackandhonk.com (opens in a new tab)', exact: true });
+  const link = banner.getByRole('link', { name: 'Explore Quack & Honk (opens in a new tab)', exact: true });
+  await expect(link).toContainText('Explore Quack & Honk');
   await expect(link).toHaveAttribute('href', 'https://quackandhonk.com');
   await expect(link).toHaveAttribute('target', '_blank');
   await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
@@ -585,7 +586,7 @@ test('mobile viewport has no horizontal overflow and supports non-drag editing',
   await expect(page.getByRole('button', { name: 'Choose files', exact: true })).toBeInViewport();
   await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  const brandLink = page.getByRole('link', { name: 'Visit quackandhonk.com (opens in a new tab)', exact: true });
+  const brandLink = page.getByRole('link', { name: 'Explore Quack & Honk (opens in a new tab)', exact: true });
   await brandLink.scrollIntoViewIfNeeded();
   await expect(brandLink).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

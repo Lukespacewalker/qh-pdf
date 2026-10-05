@@ -37,7 +37,7 @@ for (const width of [320, 390, 768]) {
     await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect((await chooser.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await page.getByRole('link', { name: 'Visit quackandhonk.com (opens in a new tab)' }).scrollIntoViewIfNeeded();
+    await page.getByRole('link', { name: 'Explore Quack & Honk (opens in a new tab)' }).scrollIntoViewIfNeeded();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 }
@@ -99,6 +99,12 @@ test('mobile save and recovery controls have full touch targets', async ({ page 
   pdf.addPage([240, 360]);
   await page.locator('input[type=file]').setInputFiles({ name: 'touch-targets.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await pdf.save()) });
   await expect(page.locator('article')).toHaveCount(1);
+  const shortcuts = page.locator('.shortcut-help > summary');
+  expect((await shortcuts.boundingBox())!.height).toBeGreaterThanOrEqual(42);
+  await shortcuts.click();
+  await expect(page.locator('.shortcut-help dl')).toBeVisible();
+  await shortcuts.click();
+  await expect(page.locator('.shortcut-help dl')).toBeHidden();
   const protect = page.getByRole('checkbox', { name: 'Require a password to open the saved PDF', exact: true });
   const recovery = page.getByRole('checkbox', { name: 'Remember work on this device', exact: true });
   for (const checkbox of [protect, recovery]) {

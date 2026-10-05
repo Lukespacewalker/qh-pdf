@@ -16,6 +16,7 @@ export const thaiMessages: Readonly<Record<string, string>> = {
   'Save your document': 'บันทึกเอกสารของคุณ',
   'Made with care by': 'สร้างด้วยความใส่ใจโดย',
   'Explore Quack & Honk': 'พบกับ Quack & Honk',
+  'Explore Quack & Honk (opens in a new tab)': 'พบกับ Quack & Honk (เปิดในแท็บใหม่)',
   'Runs in your browser': 'ทำงานในเบราว์เซอร์ของคุณ',
   Language: 'ภาษา',
   'Page {current} of {total}': 'หน้า {current} จาก {total}',

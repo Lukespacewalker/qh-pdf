@@ -11,7 +11,7 @@ export function BrandBanner() {
         href="https://quackandhonk.com"
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={t('Visit quackandhonk.com (opens in a new tab)')}
+        aria-label={t('Explore Quack & Honk (opens in a new tab)')}
       >
         {t('Explore Quack & Honk')} <span aria-hidden="true">↗</span>
       </a>
