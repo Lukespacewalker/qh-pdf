@@ -123,7 +123,7 @@ export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }
           <p>{t('Optional. Saves source files and page edits in this browser until cleared. Anyone using this browser can restore unprotected files. Protected PDFs ask for their opening password again; passwords and unlocked copies are never saved.')}</p>
         </details>
       </div>
-      <p id="recovery-guidance">{t('Source files and page edits stay in this browser until cleared. Anyone using this browser can restore unprotected files.')}</p>
+      <p id="recovery-guidance">{t('If enabled, source files and page edits stay in this browser until cleared. Anyone using this browser can restore unprotected files.')}</p>
       <div className="recovery-actions"><span role="status" data-testid="recovery-status">{t(enabled && pages !== lastSavedPages.current ? 'Saving on this device…' : status)}</span>
         {hasSavedCopy && <button className="text-btn" disabled={locked || clearing} onClick={() => void clear()}>{t('Clear saved work')}</button>}
       </div>

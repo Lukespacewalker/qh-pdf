@@ -122,7 +122,7 @@ test('mobile save and recovery controls have full touch targets', async ({ page 
 test('recovery guidance stays visible while its details can be opened with the keyboard', async ({ page }) => {
   await page.goto('/');
   const recovery = page.getByRole('checkbox', { name: 'Remember work on this device', exact: true });
-  const guidance = page.getByText('Source files and page edits stay in this browser until cleared. Anyone using this browser can restore unprotected files.', { exact: true });
+  const guidance = page.getByText('If enabled, source files and page edits stay in this browser until cleared. Anyone using this browser can restore unprotected files.', { exact: true });
   const details = page.locator('.recovery-details');
   const summary = details.locator('summary');
   await expect(guidance).toBeVisible();
@@ -141,5 +141,5 @@ test('recovery guidance stays visible while its details can be opened with the k
   await page.getByRole('combobox', { name: 'Language', exact: true }).selectOption('th');
   await expect(summary).toHaveText('รายละเอียดการจดจำงาน');
   await expect(guidance).toHaveCount(0);
-  await expect(page.locator('#recovery-guidance')).toHaveText('เก็บไฟล์ต้นฉบับและการแก้ไขหน้าไว้ในเบราว์เซอร์จนกว่าจะล้าง ผู้ใช้เบราว์เซอร์นี้กู้คืนไฟล์ที่ไม่ได้ป้องกันได้');
+  await expect(page.locator('#recovery-guidance')).toHaveText('เมื่อเปิดใช้ จะเก็บไฟล์ต้นฉบับและการแก้ไขหน้าไว้ในเบราว์เซอร์จนกว่าจะล้าง ผู้ใช้เบราว์เซอร์นี้กู้คืนไฟล์ที่ไม่ได้ป้องกันได้');
 });

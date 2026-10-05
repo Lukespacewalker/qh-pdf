@@ -73,8 +73,8 @@ export const thaiMessages: Readonly<Record<string, string>> = {
   'Clear saved work': 'ล้างงานที่บันทึกไว้',
   'Remember work on this device': 'จดจำงานไว้ในอุปกรณ์นี้',
   'How recovery works': 'รายละเอียดการจดจำงาน',
-  'Source files and page edits stay in this browser until cleared. Anyone using this browser can restore unprotected files.':
-    'เก็บไฟล์ต้นฉบับและการแก้ไขหน้าไว้ในเบราว์เซอร์จนกว่าจะล้าง ผู้ใช้เบราว์เซอร์นี้กู้คืนไฟล์ที่ไม่ได้ป้องกันได้',
+  'If enabled, source files and page edits stay in this browser until cleared. Anyone using this browser can restore unprotected files.':
+    'เมื่อเปิดใช้ จะเก็บไฟล์ต้นฉบับและการแก้ไขหน้าไว้ในเบราว์เซอร์จนกว่าจะล้าง ผู้ใช้เบราว์เซอร์นี้กู้คืนไฟล์ที่ไม่ได้ป้องกันได้',
   'Optional. Saves source files and page edits in this browser until cleared. Anyone using this browser can restore unprotected files. Protected PDFs ask for their opening password again; passwords and unlocked copies are never saved.':
     'ไม่บังคับ เบราว์เซอร์จะเก็บไฟล์ต้นฉบับและการแก้ไขหน้าไว้จนกว่าจะล้าง ผู้ใช้เบราว์เซอร์นี้สามารถกู้คืนไฟล์ที่ไม่ได้ป้องกันได้ ส่วน PDF ที่มีการป้องกันจะขอรหัสผ่านอีกครั้ง โดยจะไม่บันทึกรหัสผ่านหรือสำเนาที่ปลดล็อกแล้ว',
 
