@@ -111,13 +111,19 @@ export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }
         <button className="btn" disabled={locked || clearing} onClick={() => void clear()}>{t('Clear saved work')}</button>
       </div>
     </> : <>
-      <label className="check-label"><input type="checkbox" checked={enabled} disabled={!ready || locked || clearing || (!enabled && !pages.length)}
-        onChange={event => {
-          if (!event.target.checked) { void clear(); return; }
-          lastSavedPages.current = null;
-          setError(''); setEnabled(true);
-        }} />{t('Remember work on this device')}</label>
-      <p>{t('Optional. Saves source files and page edits in this browser until cleared. Anyone using this browser can restore unprotected files. Protected PDFs ask for their opening password again; passwords and unlocked copies are never saved.')}</p>
+      <div className="recovery-heading">
+        <label className="check-label"><input type="checkbox" checked={enabled} aria-describedby="recovery-guidance" disabled={!ready || locked || clearing || (!enabled && !pages.length)}
+          onChange={event => {
+            if (!event.target.checked) { void clear(); return; }
+            lastSavedPages.current = null;
+            setError(''); setEnabled(true);
+          }} />{t('Remember work on this device')}</label>
+        <details className="recovery-details">
+          <summary>{t('How recovery works')}</summary>
+          <p>{t('Optional. Saves source files and page edits in this browser until cleared. Anyone using this browser can restore unprotected files. Protected PDFs ask for their opening password again; passwords and unlocked copies are never saved.')}</p>
+        </details>
+      </div>
+      <p id="recovery-guidance">{t('Source files and page edits stay in this browser until cleared. Anyone using this browser can restore unprotected files.')}</p>
       <div className="recovery-actions"><span role="status" data-testid="recovery-status">{t(enabled && pages !== lastSavedPages.current ? 'Saving on this device…' : status)}</span>
         {hasSavedCopy && <button className="text-btn" disabled={locked || clearing} onClick={() => void clear()}>{t('Clear saved work')}</button>}
       </div>

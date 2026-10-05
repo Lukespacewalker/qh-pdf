@@ -2,7 +2,9 @@
 
 On 2026-10-05, the user requested a newly generated welcome mascot doing a PDF task, then refined the request to feature both Quack and Honk so visitors can recognize both characters. This supersedes the [single-Quack concept](quack-organizing-pdf.md) and the welcome-only requirement for original artwork in the [Editorial Stone design](../superpowers/specs/2026-10-05-editorial-stone-ui-design.md). The six supplied mascot files remain unchanged.
 
-The selected illustration shows the shorter, green-collared Quack holding a PDF stack while the taller, long-necked Honk passes a page. The hero displays in a 220 × 120 pixel box on desktop and 180 × 90 pixels at smaller widths. Keeping the existing height preserves room for the file picker and formats. The alt text describes both characters and the action in English and Thai.
+The selected illustration shows the shorter, green-collared Quack holding a PDF stack while the taller, long-necked Honk passes a page. The hero now displays in a 320 × 160 pixel box on desktop and 180 × 90 pixels at widths up to 860px. The alt text describes both characters and the action in English and Thai.
+
+The initial 220 × 120 desktop box retained the previous mascot height. After comparing the rendered page with the concept, the user authorized a proportions refinement on 2026-10-05. The larger desktop hero, welcome canvas, headline, supporting copy and file picker follow the [current Editorial Stone decision](../superpowers/specs/2026-10-05-editorial-stone-ui-design.md). Mobile retains the compact illustration so the file picker and formats remain on the initial screen. This updates display sizing only; the generated asset and prompt below remain unchanged.
 
 Generated with the built-in ImageGen tool using the supplied `quack-hello.webp` and `honk-happy.webp` as identity/style references, plus the first generated Quack illustration as the PDF-action reference. The selected RGBA output was proportionally downscaled within 640 × 320 pixels and encoded as WebP at quality 90, preserving alpha, in `public/mascots/quack-honk-pdf-hero.webp`. No user document was supplied.
 
