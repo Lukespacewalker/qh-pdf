@@ -31,3 +31,15 @@ it('rejects invalid page references and unsupported snapshots on restore', async
   await expect(restoreSnapshot(snapshot, async () => doc)).rejects.toThrow();
   await expect(restoreSnapshot({ ...snapshot, version: 999 }, async () => doc)).rejects.toThrow();
 });
+it('round-trips valid crop edits without sharing mutable settings', async () => {
+  const crop = { top: 0.1, right: 0.2, bottom: 0.1, left: 0 };
+  const snapshot = createSnapshot(new Map([['source', doc]]), { ...workspace, pages: [{ ...workspace.pages[0], crop }] });
+  crop.top = 0.5;
+  const restored = await restoreSnapshot(snapshot, async () => doc);
+  expect(restored.workspace.pages[0].crop?.top).toBe(0.1);
+});
+it.each([null, {}, { top: 0.8, bottom: 0.2, left: 0, right: 0 }, { top: Infinity, bottom: 0, left: 0, right: 0 }])('rejects malformed stored crop instead of silently clearing it', async crop => {
+  const saved = createSnapshot(new Map([['source', doc]]), workspace);
+  Object.assign(saved.workspace.pages[0], { crop });
+  await expect(restoreSnapshot(saved, async () => doc)).rejects.toThrow('could not be restored');
+});

@@ -48,6 +48,17 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('PDF export worker bridge', () => {
+  it.each([
+    ['Page number does not fit inside the visible page area.', 'Page number does not fit inside the visible page area.'],
+    ['Private source metadata from a library diagnostic', 'We couldn’t create the PDF. Your workspace is still here.'],
+  ])('only exposes application-owned output errors: %s', async (message, expected) => {
+    const doc = document();
+    const pending = runPdfExport(new Map([[doc.id, doc]]), workspace());
+    const rejection = expect(pending).rejects.toMatchObject({ code: 'export-failed', message: expected });
+    FakeWorker.instances[0].onmessage!({ data: { type: 'error', message } } as MessageEvent);
+    await rejection;
+    expect(FakeWorker.instances[0].terminate).toHaveBeenCalledOnce();
+  });
   it('transfers one copied working buffer per referenced source and preserves original bytes', async () => {
     const doc = document();
     doc.unlockedBytes = new Uint8Array([4, 5, 6]).buffer;

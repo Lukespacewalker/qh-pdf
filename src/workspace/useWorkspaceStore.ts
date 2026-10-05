@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import {
-  appendPages, deletePages, deselectAllPages, duplicatePages, emptyWorkspace, movePage, reorderPage,
+  appendPages, cropPages, deletePages, deselectAllPages, duplicatePages, emptyWorkspace, movePage, reorderPage,
   rotatePages, sanitizeSelection, selectAllPages, selectPageRange, toggleSelection, type WorkspaceState,
 } from '../domain/workspace';
 import { commit, createHistory, redo, undo, type HistoryState } from '../domain/workspaceCommands';
 import type { ImportedDocument } from '../engine/PdfEngine';
 import { newId } from '../lib/ids';
+import type { CropMargins } from '../domain/crop';
 
 export type ImportDocument = (file: File) => Promise<ImportedDocument>;
 export class ImportCancelled extends Error {}
@@ -22,6 +23,7 @@ interface Store {
   deselectAll: () => void;
   rotate: (degrees: 90 | -90) => void;
   rotatePage: (id: string, degrees: 90 | -90) => void;
+  crop: (crop?: CropMargins) => void;
   remove: () => void;
   duplicate: () => void;
   move: (id: string, direction: -1 | 1) => void;
@@ -83,6 +85,7 @@ export const useWorkspaceStore = create<Store>((set, get) => ({
   },
   rotate(d) { set(s => ({ history: commit(s.history, rotatePages(s.history.present, s.history.present.selectedPageIds, d)) })); },
   rotatePage(id, d) { set(s => ({ history: commit(s.history, rotatePages(s.history.present, [id], d)) })); },
+  crop(crop) { set(s => ({ history: commit(s.history, cropPages(s.history.present, s.history.present.selectedPageIds, crop)) })); },
   remove() {
     set(s => {
       const history = commit(s.history, deletePages(s.history.present, s.history.present.selectedPageIds));

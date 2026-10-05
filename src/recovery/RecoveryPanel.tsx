@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useI18n } from '../i18n/i18n';
 import { ImportCancelled, useWorkspaceStore, type ImportDocument } from '../workspace/useWorkspaceStore';
 import { createSnapshot, restoreSnapshot } from './snapshot';
 import { readSavedWork, RecoveryConflict, writeSavedWork, type SavedWork } from './repository';
@@ -6,6 +7,7 @@ import { readSavedWork, RecoveryConflict, writeSavedWork, type SavedWork } from 
 export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }: {
   importDocument: ImportDocument; locked: boolean; onRestoring: (value: boolean) => void; onPending: (value: boolean) => void;
 }) {
+  const { t } = useI18n();
   const documents = useWorkspaceStore(s => s.documents);
   const pages = useWorkspaceStore(s => s.history.present.pages);
   const [ready, setReady] = useState(false);
@@ -101,12 +103,12 @@ export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }
     } finally { onRestoring(false); }
   }
 
-  return <aside className={`recovery-panel ${available ? 'recovery-pending' : ''}`} aria-label="Work recovery">
+  return <aside className={`recovery-panel ${available ? 'recovery-pending' : ''}`} aria-label={t('Work recovery')}>
     {available ? <>
-      <div><strong>Saved work is waiting here.</strong><p>Restore your last saved pages, or clear the saved copy to start fresh. Password-protected files will ask for their passwords again.</p></div>
+      <div><strong>{t('Saved work is waiting here.')}</strong><p>{t('Restore your last saved pages, or clear the saved copy to start fresh. Password-protected files will ask for their passwords again.')}</p></div>
       <div className="recovery-actions">
-        <button className="btn" disabled={locked || clearing} onClick={() => void restore()}>Restore saved work</button>
-        <button className="btn" disabled={locked || clearing} onClick={() => void clear()}>Clear saved work</button>
+        <button className="btn" disabled={locked || clearing} onClick={() => void restore()}>{t('Restore saved work')}</button>
+        <button className="btn" disabled={locked || clearing} onClick={() => void clear()}>{t('Clear saved work')}</button>
       </div>
     </> : <>
       <label className="check-label"><input type="checkbox" checked={enabled} disabled={!ready || locked || clearing || (!enabled && !pages.length)}
@@ -114,12 +116,12 @@ export function RecoveryPanel({ importDocument, locked, onRestoring, onPending }
           if (!event.target.checked) { void clear(); return; }
           lastSavedPages.current = null;
           setError(''); setEnabled(true);
-        }} />Remember work on this device</label>
-      <p>Optional. Saves source files and page edits in this browser until cleared. Anyone using this browser can restore unprotected files. Protected PDFs ask for their opening password again; passwords and unlocked copies are never saved.</p>
-      <div className="recovery-actions"><span role="status" data-testid="recovery-status">{enabled && pages !== lastSavedPages.current ? 'Saving on this device…' : status}</span>
-        {hasSavedCopy && <button className="text-btn" disabled={locked || clearing} onClick={() => void clear()}>Clear saved work</button>}
+        }} />{t('Remember work on this device')}</label>
+      <p>{t('Optional. Saves source files and page edits in this browser until cleared. Anyone using this browser can restore unprotected files. Protected PDFs ask for their opening password again; passwords and unlocked copies are never saved.')}</p>
+      <div className="recovery-actions"><span role="status" data-testid="recovery-status">{t(enabled && pages !== lastSavedPages.current ? 'Saving on this device…' : status)}</span>
+        {hasSavedCopy && <button className="text-btn" disabled={locked || clearing} onClick={() => void clear()}>{t('Clear saved work')}</button>}
       </div>
     </>}
-    {error && <p className="notice" role="alert">{error}</p>}
+    {error && <p className="notice" role="alert">{t(error)}</p>}
   </aside>;
 }

@@ -10,6 +10,8 @@ The homepage has an editorial headline on the left and a prominent import panel 
 
 The active workspace uses the same palette and typography, a persistent labeled toolbar, a dominant page grid and a distinct save section. The page grid adapts to available width, with two columns on mobile. Selection checkboxes, preview and non-drag arrows stay visible. Password, preview, progress, cancellation, error and recovery states share the new styling.
 
+The document-finishing delivery merged into main during this redesign remains supported: crop, numbering, watermark, compression, export preview, shortcuts and English/Thai preferences. New editorial copy is translated. Thai headings use available system Thai typefaces; the Noto export font remains deferred to PDF decoration. The mobile toolbar keeps four rows with Duplicate, Delete and Crop sharing the final row.
+
 ## Design tokens
 
 - Background: mineral white `#F3F0EC`; surface: chalk `#FFFDFA`.

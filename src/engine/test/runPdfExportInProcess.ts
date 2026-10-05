@@ -9,10 +9,13 @@ export function runPdfExportInProcess(
   documents: ReadonlyMap<string, ImportedDocument>,
   workspace: WorkspaceState,
   options: PdfExportOptions = {},
+  decorationContext?: PdfExportRequest['decorationContext'],
 ) {
   if (options.signal?.aborted) return Promise.reject(new DOMException('Export cancelled', 'AbortError'));
   const sourceIds = new Set(workspace.pages.map(page => page.sourceDocumentId));
   const request: PdfExportRequest = {
+    output: options.output,
+    decorationContext,
     documents: [...sourceIds].map(id => {
       const source = documents.get(id);
       if (!source) throw new Error('An export source is missing');
@@ -28,6 +31,7 @@ export function runPdfExportInProcess(
       sourceDocumentId: page.sourceDocumentId,
       sourcePageIndex: page.sourcePageIndex,
       rotation: page.rotation,
+      ...(page.crop && { crop: { ...page.crop } }),
     })),
   };
   return assemblePdf(request, (completed, total) => {

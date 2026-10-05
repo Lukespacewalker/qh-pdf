@@ -1,4 +1,4 @@
-type IconName = 'add' | 'file' | 'lock' | 'undo' | 'redo' | 'select' | 'deselect' | 'rotate-left' | 'rotate-right' | 'copy' | 'trash' | 'eye' | 'left' | 'right' | 'download';
+type IconName = 'add' | 'file' | 'lock' | 'undo' | 'redo' | 'select' | 'deselect' | 'rotate-left' | 'rotate-right' | 'copy' | 'trash' | 'eye' | 'left' | 'right' | 'download' | 'crop';
 
 const paths: Record<IconName, string> = {
   add: 'M12 5v14M5 12h14',
@@ -16,6 +16,7 @@ const paths: Record<IconName, string> = {
   left: 'm14 6-6 6 6 6',
   right: 'm10 6 6 6-6 6',
   download: 'M12 3v12M7 10l5 5 5-5M4 16v5h16v-5',
+  crop: 'M6 3v15h15M3 6h15v15',
 };
 
 export function Icon({ name }: { name: IconName }) {

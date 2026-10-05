@@ -1,5 +1,6 @@
 import { assemblePdf } from './assemblePdf';
 import type { PdfExportRequest, PdfExportResponse } from './PdfExportProtocol';
+import { safeExportMessage } from './exportErrors';
 
 self.onmessage = async ({ data }: MessageEvent<PdfExportRequest>) => {
   try {
@@ -12,10 +13,10 @@ self.onmessage = async ({ data }: MessageEvent<PdfExportRequest>) => {
     });
     const response: PdfExportResponse = { type: 'result', bytes };
     self.postMessage(response, { transfer: [bytes] });
-  } catch {
+  } catch (error) {
     const response: PdfExportResponse = {
       type: 'error',
-      message: 'We couldn’t create the PDF. Your workspace is still here.',
+      message: safeExportMessage(error),
     };
     self.postMessage(response);
   }

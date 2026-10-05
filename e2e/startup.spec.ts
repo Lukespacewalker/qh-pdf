@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const pdfRuntimeAsset = /\/assets\/PdfJsRuntime-.*\.js$/;
 const pdfRuntimeOrWorker = /PdfJsRuntime|pdf\.worker/i;
-const exportOrSecurityRuntime = /PdfExport\.worker|PdfSecurity|qpdf|\.wasm$/i;
+const exportOrSecurityRuntime = /PdfExport\.worker|PdfSecurity|PdfCompression|qpdf|fontkit|NotoSansThaiLooped|\.wasm$/i;
 
 async function ready(page: Page) {
   await page.goto('/');
@@ -60,7 +60,7 @@ test('empty startup and image-only export leave PDF.js and security runtimes unl
   const output = await reopenDownload(download);
   expect(output.getPages().map(pdfPage => [pdfPage.getWidth(), pdfPage.getHeight()])).toEqual([[80, 60]]);
   expect(requests.some(path => /PdfExport\.worker/.test(path))).toBe(true);
-  expect(requests.some(path => pdfRuntimeOrWorker.test(path) || /PdfSecurity|qpdf|\.wasm$/i.test(path))).toBe(false);
+  expect(requests.some(path => pdfRuntimeOrWorker.test(path) || /PdfSecurity|PdfCompression|qpdf|fontkit|NotoSansThaiLooped|\.wasm$/i.test(path))).toBe(false);
 });
 
 test('a failed PDF runtime request preserves an image workspace and offers an honest retry', async ({ page }) => {

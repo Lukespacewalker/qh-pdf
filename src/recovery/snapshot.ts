@@ -1,4 +1,5 @@
 import type { WorkspaceState } from '../domain/workspace';
+import { assertCrop, isValidCrop } from '../domain/crop';
 import type { ImportedDocument } from '../engine/PdfEngine';
 import type { ImportDocument } from '../workspace/useWorkspaceStore';
 
@@ -20,7 +21,10 @@ export function createSnapshot(documents: ReadonlyMap<string, ImportedDocument>,
       return { id, fileName: doc.fileName, mimeType: doc.mimeType, bytes: doc.bytes };
     }),
     workspace: {
-      pages: workspace.pages.map(page => ({ ...page })),
+      pages: workspace.pages.map(page => {
+        if (page.crop !== undefined) assertCrop(page.crop);
+        return { ...page, ...(page.crop && { crop: { ...page.crop } }) };
+      }),
       selectedPageIds: [...workspace.selectedPageIds],
     },
   };
@@ -42,8 +46,12 @@ export async function restoreSnapshot(value: unknown, importDocument: ImportDocu
   for (const page of saved.workspace.pages) {
     const doc = page && documents.get(page.sourceDocumentId);
     if (!page || typeof page.id !== 'string' || ids.has(page.id) || !doc || !Number.isInteger(page.sourcePageIndex) ||
-        page.sourcePageIndex < 0 || page.sourcePageIndex >= doc.pages.length || ![0, 90, 180, 270].includes(page.rotation)) throw invalid();
+        page.sourcePageIndex < 0 || page.sourcePageIndex >= doc.pages.length || ![0, 90, 180, 270].includes(page.rotation) ||
+        (page.crop !== undefined && !isValidCrop(page.crop))) throw invalid();
     ids.add(page.id);
   }
-  return { documents, workspace: { ...saved.workspace, selectedPageIds: saved.workspace.selectedPageIds.filter(id => ids.has(id)) } };
+  return { documents, workspace: {
+    pages: saved.workspace.pages.map(page => ({ ...page, ...(page.crop && { crop: { ...page.crop } }) })),
+    selectedPageIds: saved.workspace.selectedPageIds.filter(id => ids.has(id)),
+  } };
 }
