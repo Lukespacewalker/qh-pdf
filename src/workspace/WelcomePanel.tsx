@@ -23,7 +23,7 @@ export function WelcomePanel({ busy, locked, drag, onChoose, onDragChange, onDro
       onDragOver={event => { event.preventDefault(); if (!locked) onDragChange(true); }}
       onDragLeave={() => onDragChange(false)}
       onDrop={event => { event.preventDefault(); onDragChange(false); onDrop(Array.from(event.dataTransfer.files)); }}>
-      <MascotState state={busy ? 'working' : 'empty'} alt={busy ? t('Quack working') : t('Quack welcoming you to the workspace')} />
+      <MascotState state={busy ? 'working' : 'empty'} alt={busy ? t('Quack working') : t('Quack and Honk arranging PDF pages together')} />
       <h2>{t('Drop your files here')}</h2>
       <p className="drop-intro">{t('or choose them from your device')}</p>
       {error}

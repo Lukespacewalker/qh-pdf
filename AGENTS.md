@@ -10,6 +10,7 @@ Read README.md for current scope and docs/superpowers/specs/2026-09-12-quack-hon
 - A missing source or invalid page must fail export visibly. Never skip requested output pages silently.
 - Keep explicit non-drag controls. Use accessible labels for page selection and direction-sensitive actions.
 - Use the supplied mascot artwork for matching UI states. Do not substitute poses, redraw mascots, cover controls or celebrate routine saves.
+  - Approved welcome-only exception (2026-10-05): the user explicitly requested a newly generated hero featuring both Quack and Honk doing a PDF task so visitors can recognize them. Use the local `quack-honk-pdf-hero.webp` asset described in the [current hero decision](docs/design/quack-honk-pdf-hero.md). Preserve the six supplied assets and continue using them for other UI states; further generated variants require a user request.
 - Node.js 24 is the current CI baseline. Commit package-lock.json with dependency changes; normal CI uses npm ci and read-only repository permissions.
 - Before describing work as verified, run npm test, npm run build and npm run test:browser against the same revision. Report which browser and fixture coverage was actually exercised.
 - Do not suppress test failures, remove privacy assertions or raise warning thresholds merely to make CI green.
