@@ -52,6 +52,11 @@ test('compact header switches language with the keyboard and keeps Thai import v
   await page.goto('/');
   const thai = page.getByRole('button', { name: 'ไทย', exact: true });
   const english = page.getByRole('button', { name: 'EN', exact: true });
+  for (const button of [thai, english]) {
+    const bounds = (await button.boundingBox())!;
+    expect(bounds.width).toBeGreaterThanOrEqual(44);
+    expect(bounds.height).toBeGreaterThanOrEqual(44);
+  }
   await expect(english).toHaveAttribute('aria-pressed', 'true');
   await thai.focus();
   await page.keyboard.press('Enter');

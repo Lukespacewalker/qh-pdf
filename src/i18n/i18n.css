@@ -5,6 +5,9 @@ html[lang=th] { --display: 'Segoe UI', Tahoma, sans-serif; }
 html[lang=th] .brand { font-family: 'DM Serif Display', Georgia, serif; }
 html[lang=th] .eyebrow { letter-spacing: 0; text-transform: none; }
 html[lang=th] .drop h1 { line-height: 1.4; }
+@media (max-width: 860px) {
+  .language-switch button { min-width: 44px; }
+}
 @media (max-width: 600px) {
   .language-switch { gap: 0; }
   html[lang=th] .drop h1 { font-size: 26px; }

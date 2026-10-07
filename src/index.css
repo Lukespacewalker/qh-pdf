@@ -242,7 +242,7 @@
   .topbar { min-height: 73px; width: calc(100% - 40px); gap: 12px; }
   .brand { font-size: 27px; }
   .topbar-meta { gap: 14px; font-size: 12px; }
-  .sibling-link { padding-left: 13px; gap: 6px; }
+  .sibling-link { padding-left: 13px; gap: 7px; }
   .shell { padding-inline: 20px; }
   .full-page-preview-dialog { width: calc(100vw - 16px); height: calc(100dvh - 16px); border-radius: 8px; }
   .full-page-preview-header { padding: 14px 12px 10px; }
@@ -257,7 +257,7 @@
 @media (max-width: 360px) {
   .topbar { width: calc(100% - 30px); }
   .brand { font-size: 24px; }
-  .topbar-meta { gap: 10px; font-size: 11px; }
+  .topbar-meta { gap: 5px; font-size: 11px; }
   .sibling-link { padding-left: 10px; gap: 4px; }
   .shell { padding-inline: 15px; }
   .page-selection span { display: none; }
