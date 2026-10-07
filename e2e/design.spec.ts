@@ -1,18 +1,23 @@
 import { expect, test } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 
-test('desktop homepage makes the file picker the primary action in the selected split layout', async ({ page }) => {
+test('desktop homepage starts with a full-width PDF import and explains the tools below', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Bring your pages together.');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop PDFs or images here');
   const chooser = page.getByRole('button', { name: 'Choose files', exact: true });
   await expect(chooser).toBeEnabled();
   await expect(chooser).toBeInViewport();
-  const copy = await page.locator('.welcome-copy').boundingBox();
+  const content = await page.locator('.workspace-content').boundingBox();
+  const explanation = await page.locator('.capabilities').boundingBox();
   const drop = await page.locator('.drop').boundingBox();
-  expect(copy).not.toBeNull();
+  expect(content).not.toBeNull();
+  expect(explanation).not.toBeNull();
   expect(drop).not.toBeNull();
-  expect(drop!.x).toBeGreaterThanOrEqual(copy!.x + copy!.width);
+  expect(drop!.x).toBeCloseTo(content!.x, 0);
+  expect(drop!.width).toBeCloseTo(content!.width, 0);
+  expect(explanation!.y).toBeGreaterThanOrEqual(drop!.y + drop!.height);
+  await expect(page.getByRole('heading', { name: 'Merge and organize PDFs', exact: true })).toBeVisible();
 
   // Keyboard activation proves the prominent control opens the real input.
   await chooser.focus();
@@ -30,7 +35,7 @@ for (const width of [320, 390, 768]) {
   test(`homepage at ${width}px keeps import and formats visible without overflow`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Bring your pages together.');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop PDFs or images here');
     const chooser = page.getByRole('button', { name: 'Choose files', exact: true });
     await expect(chooser).toBeEnabled();
     await expect(chooser).toBeInViewport();
@@ -41,6 +46,26 @@ for (const width of [320, 390, 768]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 }
+
+test('compact header switches language with the keyboard and keeps Thai import visible', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto('/');
+  const thai = page.getByRole('button', { name: 'ไทย', exact: true });
+  const english = page.getByRole('button', { name: 'EN', exact: true });
+  await expect(english).toHaveAttribute('aria-pressed', 'true');
+  await thai.focus();
+  await page.keyboard.press('Enter');
+  await expect(thai).toHaveAttribute('aria-pressed', 'true');
+  await expect(english).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('ลาก PDF หรือรูปภาพมาวางที่นี่');
+  await expect(page.getByRole('button', { name: 'เลือกไฟล์', exact: true })).toBeInViewport();
+  await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.reload();
+  await expect(thai).toHaveAttribute('aria-pressed', 'true');
+  await english.click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop PDFs or images here');
+});
 
 test('editorial fonts decode from same-origin bundled assets', async ({ page, baseURL }) => {
   const requests: string[] = [];
@@ -138,7 +163,7 @@ test('recovery guidance stays visible while its details can be opened with the k
   await expect(details.locator('p')).toBeHidden();
   await expect(guidance).toBeVisible();
   await expect(page.getByTestId('recovery-status')).toBeVisible();
-  await page.getByRole('combobox', { name: 'Language', exact: true }).selectOption('th');
+  await page.getByRole('button', { name: 'ไทย', exact: true }).click();
   await expect(summary).toHaveText('รายละเอียดการจดจำงาน');
   await expect(guidance).toHaveCount(0);
   await expect(page.locator('#recovery-guidance')).toHaveText('เมื่อเปิดใช้ จะเก็บไฟล์ต้นฉบับและการแก้ไขหน้าไว้ในเบราว์เซอร์จนกว่าจะล้าง ผู้ใช้เบราว์เซอร์นี้กู้คืนไฟล์ที่ไม่ได้ป้องกันได้');

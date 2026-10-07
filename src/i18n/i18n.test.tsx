@@ -22,10 +22,10 @@ describe('Thai UI translation', () => {
       </I18nProvider>,
     );
 
-    expect(html).toContain('รวมทุกหน้า');
-    expect(html).toContain('เป็นเอกสารเดียว');
+    expect(html).toContain('ลาก PDF หรือรูปภาพมาวางที่นี่');
+    expect(html).toContain('รวมไฟล์และจัดหน้า PDF');
     expect(html).toContain('เลือกไฟล์');
-    expect(html).toContain('จากไฟล์สู่เอกสารที่พร้อมใช้');
+    expect(html).toContain('จัดเรียงหน้า');
     expect(html).toContain('เพิ่มไฟล์ของคุณ');
     expect(html).toContain('เครื่องมืออื่นจาก Quack &amp; Honk');
     expect(html).toContain('พบกับ Quack &amp; Honk');

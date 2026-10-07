@@ -1,13 +1,15 @@
 @import './brand/brand.css';
 
 /* App chrome and shared controls */
-.topbar { min-height: 80px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px max(32px, calc((100vw - 1320px) / 2)); border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 20; }
-.brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; font-family: var(--display); font-size: 30px; line-height: 1.1; letter-spacing: -.025em; }
-.brand-icon { display: block; width: 26px; height: 26px; flex: 0 0 auto; }
-.brand-byline { padding-left: 20px; margin-left: 10px; border-left: 1px solid var(--border); font-family: var(--body); font-size: 13px; letter-spacing: 0; color: var(--secondary); }
-.header-privacy { display: flex; align-items: center; gap: 10px; color: var(--secondary); font-size: 13px; }
-.header-privacy .icon { width: 16px; height: 16px; }
-.shell { width: min(1400px, 100%); margin: auto; padding: 38px 40px 22px; }
+.topbar { min-height: 90px; width: min(1320px, calc(100% - 120px)); margin: auto; display: flex; align-items: center; gap: 30px; border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; font-family: 'DM Serif Display', Georgia, serif; font-size: 36px; line-height: 1.1; letter-spacing: -1.3px; }
+.brand > span { letter-spacing: -.7px; }
+.brand-dot { display: block; width: 5px; height: 5px; margin-left: 1px; flex: 0 0 auto; align-self: center; background: var(--primary); border-radius: 50%; }
+.header-subtitle { padding-left: 28px; border-left: 1px solid var(--border); color: var(--secondary); font-size: 14px; }
+.topbar-meta { display: flex; align-items: center; gap: 28px; margin-left: auto; font-size: 14px; }
+.sibling-link { display: flex; align-items: center; gap: 12px; min-height: 44px; padding-left: 28px; border-left: 1px solid var(--border); color: var(--text); text-decoration: none; white-space: nowrap; }
+.sibling-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.shell { width: min(1440px, 100%); margin: auto; padding: 38px 60px 22px; }
 .workspace-layout { display: flex; flex-direction: column; gap: 24px; align-items: stretch; }
 .workspace-content { min-width: 0; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 14px; border: 1px solid var(--control-border); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 14px; font-weight: 600; line-height: 1.25; text-align: center; transition: background-color .15s, border-color .15s; }
@@ -23,16 +25,10 @@
 .hidden-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .mascot { display: block; width: 112px; height: 112px; object-fit: contain; }
 
-/* Editorial welcome: one clear task, one primary action */
-.shell.empty-wrap { width: min(1560px, 100%); }
-body:has(.empty-wrap) .topbar { padding-inline: max(32px, calc((100vw - 1480px) / 2)); }
-.empty-wrap { padding-top: 48px; }
-.welcome-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 48px; padding-bottom: 42px; }
-.welcome-copy { min-width: 0; padding: 20px 0; }
-.welcome-copy h1 { margin: 0; font-family: var(--display); font-size: clamp(48px, 6vw, 96px); font-weight: 400; letter-spacing: -.04em; line-height: 1.07; }
-.welcome-copy h1 span { display: block; }
-.welcome-intro { max-width: 600px; margin: 26px 0 0; font-size: clamp(17px, 1.7vw, 24px); color: var(--secondary); line-height: 1.6; }
-.welcome-reassurance { margin-top: 34px; color: var(--secondary); font-size: 15px; line-height: 1.6; }
+/* Full-width import comes before the tool explanations. */
+.empty-wrap { padding-top: 32px; }
+.welcome-hero { padding-bottom: 32px; }
+.welcome-reassurance { display: flex; flex-wrap: wrap; gap: 6px 24px; margin-top: 24px; color: var(--secondary); font-size: 13px; line-height: 1.6; }
 .welcome-reassurance p { margin: 5px 0; }
 .welcome-reassurance p:first-child { display: flex; align-items: center; gap: 8px; }
 .welcome-reassurance .icon { width: 14px; height: 14px; }
@@ -42,7 +38,7 @@ body:has(.empty-wrap) .topbar { padding-inline: max(32px, calc((100vw - 1480px) 
 .drop.drag::before { border-color: var(--primary); border-width: 2px; }
 .drop .mascot { margin: 0 auto 18px; width: 120px; height: 120px; }
 .drop .mascot-welcome { width: 320px; height: 160px; max-width: 100%; }
-.drop h2 { margin: 0; font-family: var(--display); font-size: clamp(30px, 3vw, 42px); font-weight: 400; letter-spacing: -.025em; line-height: 1.15; }
+.drop h1 { margin: 0; font-family: var(--display); font-size: clamp(30px, 3vw, 42px); font-weight: 400; letter-spacing: -.025em; line-height: 1.2; }
 .drop-intro { margin: 10px 0 22px; color: var(--secondary); font-size: 18px; line-height: 1.5; }
 .file-btn { min-height: 64px; width: min(380px, 100%); font-size: 20px; }
 .file-btn .icon { width: 24px; height: 24px; }
@@ -50,12 +46,14 @@ body:has(.empty-wrap) .topbar { padding-inline: max(32px, calc((100vw - 1480px) 
 .welcome-history { margin-top: 18px; }
 .welcome-history .history-tools { justify-content: center; border: 0; padding: 0; }
 .capabilities { border-top: 1px solid var(--border); padding: 30px 0 6px; }
+.capabilities > h2 { margin: 0; font-family: var(--display); font-size: 30px; font-weight: 400; line-height: 1.3; }
+.capabilities-intro { margin: 10px 0 28px; color: var(--secondary); font-size: 16px; line-height: 1.6; }
 .capability-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .capability { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 18px; padding: 0 24px; border-left: 1px solid var(--border); }
 .capability:first-child { padding-left: 0; border: 0; }
 .capability:last-child { padding-right: 0; }
 .capability-number { font-family: var(--display); font-size: 24px; color: var(--primary); line-height: 1.25; }
-.capability h3 { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.25; letter-spacing: -.02em; margin: 0 0 10px; }
+.capability h3 { font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.25; letter-spacing: -.02em; margin: 0 0 10px; }
 .capability p { margin: 0; color: var(--secondary); font-size: 15px; line-height: 1.7; }
 
 /* Active document workspace */
@@ -64,7 +62,7 @@ body:has(.empty-wrap) .topbar { padding-inline: max(32px, calc((100vw - 1480px) 
 .head h1 { font-family: var(--display); font-size: 48px; font-weight: 400; letter-spacing: -.03em; line-height: 1.1; margin: 0; }
 .head .sub { margin: 10px 0 0; font-size: 14px; }
 .add-files { min-width: 126px; }
-.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; position: sticky; top: 90px; z-index: 10; box-shadow: var(--shadow); margin-bottom: 16px; }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; position: sticky; top: 12px; z-index: 10; box-shadow: var(--shadow); margin-bottom: 16px; }
 .toolbar .btn { border-color: transparent; background: transparent; font-size: 12px; padding-inline: 9px; }
 .toolbar .btn:hover:not(:disabled) { background: var(--muted); border-color: var(--border); }
 .toolbar .btn:disabled { color: #9A8E83; }
@@ -162,55 +160,41 @@ body:has(.empty-wrap) .topbar { padding-inline: max(32px, calc((100vw - 1480px) 
 
 /* Responsive layouts retain visible touch and non-drag controls */
 @media (max-width: 1100px) {
-  .shell { padding-inline: 28px; }
-  .welcome-hero { gap: 30px; }
-  .welcome-copy h1 { font-size: clamp(48px, 6.2vw, 70px); }
+  .shell { padding-inline: 35px; }
+  .topbar { width: calc(100% - 70px); gap: 22px; }
   .drop { padding-inline: 26px; }
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
   .capability { gap: 12px; padding-inline: 18px; }
   .capability h3 { font-size: 22px; }
 }
 @media (max-width: 860px) {
-  .shell.empty-wrap { width: min(1400px, 100%); }
-  body:has(.empty-wrap) .topbar { padding-inline: 32px; }
+  .topbar { min-height: 80px; }
+  .header-subtitle { display: none; }
   .empty-wrap { padding-top: 28px; }
-  .welcome-hero { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-bottom: 28px; }
-  .welcome-copy { padding: 0; }
-  .welcome-copy h1 { font-size: 58px; }
-  .welcome-copy h1 span { display: inline; }
-  .welcome-copy .eyebrow { margin-bottom: 12px; }
-  .welcome-intro { margin-top: 16px; max-width: 640px; font-size: 17px; }
+  .welcome-hero { padding-bottom: 28px; }
   .welcome-reassurance { margin-top: 16px; font-size: 13px; }
   .drop { padding: 24px; }
   .drop .mascot { width: 90px; height: 90px; margin-bottom: 10px; }
   .drop .mascot-welcome { width: 180px; height: 90px; }
-  .drop h2 { font-size: 34px; }
+  .drop h1 { font-size: 34px; }
   .drop-intro { margin: 8px 0 16px; font-size: 15px; }
   .file-btn { width: min(320px, 100%); min-height: 52px; font-size: 17px; }
   .formats { font-size: 12px; }
   .save-summary { align-items: flex-start; }
 }
 @media (max-width: 720px) {
-  body:has(.empty-wrap) .topbar { padding-inline: 18px; }
-  .topbar { min-height: 64px; padding: 14px 18px; gap: 12px; }
-  .brand { font-size: 24px; gap: 7px; }
-  .brand-icon { width: 22px; height: 22px; }
-  .brand-byline { display: none; }
-  .header-privacy { gap: 6px; font-size: 11px; }
-  .header-privacy .icon { width: 13px; height: 13px; }
-  .shell { padding: 24px 18px 18px; }
+  .shell { padding-block: 24px 18px; }
   .workspace-layout { gap: 20px; }
-  .welcome-copy h1 { font-size: clamp(42px, 8vw, 56px); }
-  .welcome-intro { font-size: 16px; line-height: 1.6; margin-top: 14px; }
   .welcome-reassurance { font-size: 12px; margin-top: 16px; }
-  .welcome-copy .eyebrow { font-size: 10px; letter-spacing: .18em; }
   .drop .mascot { width: 90px; height: 90px; }
   .drop .mascot-welcome { width: 180px; }
-  .drop h2 { font-size: 30px; }
+  .drop h1 { font-size: 30px; }
   .drop-intro { font-size: 13px; }
   .file-btn { font-size: 15px; min-height: 48px; }
   .formats { margin-top: 12px; font-size: 11px; }
   .capabilities { padding-top: 24px; }
+  .capabilities > h2 { font-size: 26px; }
+  .capabilities-intro { font-size: 14px; }
   .capability-grid { grid-template-columns: 1fr; gap: 22px; }
   .capability, .capability:first-child, .capability:last-child { border: 0; padding: 0; gap: 14px; }
   .capability h3 { margin-bottom: 6px; }
@@ -219,7 +203,7 @@ body:has(.empty-wrap) .topbar { padding-inline: max(32px, calc((100vw - 1480px) 
   .head .eyebrow { font-size: 9px; margin-bottom: 8px; }
   .head .sub { font-size: 12px; margin-top: 8px; }
   .add-files { min-width: 0; padding-inline: 10px; font-size: 12px; }
-  .toolbar { top: 72px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 8px; }
+  .toolbar { top: 8px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 8px; }
   .toolbar > .history-tools, .toolbar > .selection-tools, .toolbar > .edit-tools { display: contents; }
   .toolbar > .spacer { display: none; }
   .toolbar .btn { min-width: 0; min-height: 44px; padding: 8px 4px; font-size: 12px; border-color: var(--border); }
@@ -255,6 +239,11 @@ body:has(.empty-wrap) .topbar { padding-inline: max(32px, calc((100vw - 1480px) 
   .recovery-heading .check-label { flex-shrink: 1; }
 }
 @media (max-width: 600px) {
+  .topbar { min-height: 73px; width: calc(100% - 40px); gap: 12px; }
+  .brand { font-size: 27px; }
+  .topbar-meta { gap: 14px; font-size: 12px; }
+  .sibling-link { padding-left: 13px; gap: 6px; }
+  .shell { padding-inline: 20px; }
   .full-page-preview-dialog { width: calc(100vw - 16px); height: calc(100dvh - 16px); border-radius: 8px; }
   .full-page-preview-header { padding: 14px 12px 10px; }
   .full-page-preview-header h2 { font-size: 25px; }
@@ -266,16 +255,15 @@ body:has(.empty-wrap) .topbar { padding-inline: max(32px, calc((100vw - 1480px) 
   .full-page-preview-viewport { padding: 10px; }
 }
 @media (max-width: 360px) {
-  body:has(.empty-wrap) .topbar { padding-inline: 14px; }
-  .topbar { padding-inline: 14px; }
-  .shell { padding-inline: 14px; }
-  .header-privacy { font-size: 10px; }
-  .header-privacy .icon { display: none; }
+  .topbar { width: calc(100% - 30px); }
+  .brand { font-size: 24px; }
+  .topbar-meta { gap: 10px; font-size: 11px; }
+  .sibling-link { padding-left: 10px; gap: 4px; }
+  .shell { padding-inline: 15px; }
   .page-selection span { display: none; }
   .toolbar .history-tools .icon { display: none; }
   .toolbar .btn { gap: 5px; }
-  .welcome-copy h1 { font-size: 42px; }
-  .welcome-intro { font-size: 15px; }
+  .drop h1 { font-size: 27px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }

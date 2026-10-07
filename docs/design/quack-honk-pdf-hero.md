@@ -1,5 +1,7 @@
 # Quack & Honk PDF hero
 
+> **Layout update, 2026-10-07:** The [current PDF import decision](pdf-import-first.md) places this same hero in a full-width import panel. Its display boxes and generated asset remain unchanged; the earlier split welcome layout is superseded.
+
 On 2026-10-05, the user requested a newly generated welcome mascot doing a PDF task, then refined the request to feature both Quack and Honk so visitors can recognize both characters. This supersedes the [single-Quack concept](quack-organizing-pdf.md) and the welcome-only requirement for original artwork in the [Editorial Stone design](../superpowers/specs/2026-10-05-editorial-stone-ui-design.md). The six supplied mascot files remain unchanged.
 
 The selected illustration shows the shorter, green-collared Quack holding a PDF stack while the taller, long-necked Honk passes a page. The hero now displays in a 320 × 160 pixel box on desktop and 180 × 90 pixels at widths up to 860px. The alt text describes both characters and the action in English and Thai.

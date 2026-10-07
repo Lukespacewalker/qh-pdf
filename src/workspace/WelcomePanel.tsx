@@ -10,21 +10,12 @@ export function WelcomePanel({ busy, locked, drag, onChoose, onDragChange, onDro
 }) {
   const { t } = useI18n();
   return <section className="welcome-hero" aria-labelledby="welcome-title">
-    <div className="welcome-copy">
-      <p className="eyebrow">{t('Your document workspace')}</p>
-      <h1 id="welcome-title">{t('Bring your pages')} <span>{t('together.')}</span></h1>
-      <p className="welcome-intro">{t('Combine PDFs and pictures. Arrange your pages. Save one document.')}</p>
-      <div className="welcome-reassurance">
-        <p><Icon name="lock" />{t('Your documents stay on this device.')}</p>
-        <p>{t('Free to use. No account needed.')}</p>
-      </div>
-    </div>
     <div className={`drop ${drag ? 'drag' : ''}`}
       onDragOver={event => { event.preventDefault(); if (!locked) onDragChange(true); }}
       onDragLeave={() => onDragChange(false)}
       onDrop={event => { event.preventDefault(); onDragChange(false); onDrop(Array.from(event.dataTransfer.files)); }}>
       <MascotState state={busy ? 'working' : 'empty'} alt={busy ? t('Quack working') : t('Quack and Honk arranging PDF pages together')} />
-      <h2>{t('Drop your files here')}</h2>
+      <h1 id="welcome-title">{t('Drop PDFs or images here')}</h1>
       <p className="drop-intro">{t('or choose them from your device')}</p>
       {error}
       <button className="btn primary file-btn" aria-describedby="supported-formats" onClick={onChoose} disabled={locked}>

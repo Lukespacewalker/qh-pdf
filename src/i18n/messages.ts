@@ -1,4 +1,10 @@
 export const thaiMessages: Readonly<Record<string, string>> = {
+  'Merge & organize': 'รวมและจัดหน้า PDF',
+  'Tools and language': 'เครื่องมือและภาษา',
+  'QH Image (opens in a new tab)': 'QH Image (เปิดในแท็บใหม่)',
+  'Drop PDFs or images here': 'ลาก PDF หรือรูปภาพมาวางที่นี่',
+  'Merge and organize PDFs': 'รวมไฟล์และจัดหน้า PDF',
+  'Arrange your pages': 'จัดเรียงหน้า',
   'Your document workspace': 'พื้นที่จัดการเอกสารของคุณ',
   'Document workspace': 'พื้นที่จัดการเอกสาร',
   'Bring your pages': 'รวมทุกหน้า',
