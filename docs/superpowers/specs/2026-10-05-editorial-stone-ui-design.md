@@ -2,6 +2,8 @@
 
 **Status:** User-approved visual direction; implementation and deployment authorized on 2026-10-05.
 
+> **Welcome and header superseded, 2026-10-07:** The user requested the QH Image header style, a full-width file import, direct PDF task copy and explanations below the entry point. Follow the [current PDF import decision](../../design/pdf-import-first.md) for this composition and header. Earlier welcome directions below remain as history; the palette, fonts and workspace principles still apply. The earlier deployment authorization belongs to the 2026-10-05 change.
+
 > **Current welcome proportions, 2026-10-05:** After comparison with the concept, the user authorized a larger desktop welcome canvas, headline, supporting copy and file picker. The existing paired hero displays at 320 × 160px on desktop and 180 × 90px at widths up to 860px. Recovery shows a concise storage/shared-browser warning at all times; a keyboard-accessible native disclosure holds the full explanation. Opt-in, status, errors and pending Restore/Clear actions remain visible, with persistence behavior unchanged. This supersedes the retained-height sizing in the earlier artwork update below.
 
 > **Earlier welcome artwork update, 2026-10-05:** The user's request for a hero introducing both Quack and Honk through a shared PDF task superseded the original empty-state artwork requirement below. The welcome panel uses the transparent [Quack & Honk PDF hero](../../design/quack-honk-pdf-hero.md); the six supplied poses remain unchanged. The initial hero widened while retaining the previous image height. That sizing is superseded by the current proportions decision above; the original decision below is preserved as history.

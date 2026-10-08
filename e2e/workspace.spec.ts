@@ -43,7 +43,7 @@ async function expectThumbnails(page: Page, count: number) {
 
 test('all seven locally served mascot files decode and the empty state introduces Quack and Honk arranging PDFs', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByText('Runs in your browser', { exact: true })).toBeVisible();
+  await expect(page.getByText('Your documents stay on this device.', { exact: true })).toBeVisible();
   await expect(page.getByText('Private · Browser-based', { exact: true })).toHaveCount(0);
   await expect.poll(() => page.locator('.mascot').evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
   await expect(page.locator('.mascot')).toHaveAttribute('src', '/mascots/quack-honk-pdf-hero.webp');
@@ -59,22 +59,22 @@ test('all seven locally served mascot files decode and the empty state introduce
   }
 });
 
-test('brand discovery uses one bottom banner link and a local mascot', async ({ page }) => {
+test('header links to QH Image and brand discovery uses one bottom banner', async ({ page }) => {
   await page.goto('/');
 
   const header = page.locator('header');
   await expect(header.getByText('QH PDF', { exact: true })).toBeVisible();
-  const appIcon = header.locator('img[src$="/app-icon.svg"]');
-  await expect(appIcon).toHaveAttribute('alt', '');
-  await expect.poll(() => appIcon.evaluate(
-    (element: HTMLImageElement) => element.complete && element.naturalWidth > 0,
-  )).toBe(true);
-  await expect(header.getByRole('link')).toHaveCount(0);
+  await expect(header.getByText('Merge & organize', { exact: true })).toBeVisible();
+  const sibling = header.getByRole('link', { name: 'QH Image (opens in a new tab)', exact: true });
+  await expect(sibling).toHaveAttribute('href', 'https://image.quackandhonk.com');
+  await expect(sibling).toHaveAttribute('target', '_blank');
+  await expect(sibling).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(header.getByRole('link')).toHaveCount(1);
 
-  const banner = page.getByRole('region', { name: 'More from Quack & Honk', exact: true });
+  const banner = page.getByRole('region', { name: 'Quack & Honk website', exact: true });
   await expect(banner).toBeVisible();
-  const link = banner.getByRole('link', { name: 'Explore Quack & Honk (opens in a new tab)', exact: true });
-  await expect(link).toContainText('Explore Quack & Honk');
+  const link = banner.getByRole('link', { name: 'Visit Quack & Honk (opens in a new tab)', exact: true });
+  await expect(link).toContainText('Visit Quack & Honk');
   await expect(link).toHaveAttribute('href', 'https://quackandhonk.com');
   await expect(link).toHaveAttribute('target', '_blank');
   await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
@@ -588,7 +588,7 @@ test('mobile viewport has no horizontal overflow and supports non-drag editing',
   await expect(page.getByRole('button', { name: 'Choose files', exact: true })).toBeInViewport();
   await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  const brandLink = page.getByRole('link', { name: 'Explore Quack & Honk (opens in a new tab)', exact: true });
+  const brandLink = page.getByRole('link', { name: 'Visit Quack & Honk (opens in a new tab)', exact: true });
   await brandLink.scrollIntoViewIfNeeded();
   await expect(brandLink).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

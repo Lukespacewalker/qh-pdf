@@ -326,7 +326,7 @@ test('image crop rotates with content and survives recovery with matching thumbn
 test('Thai controls, validation, preview, keyboard editing and language preference work at 390 px', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await importFixture(page);
-  await page.getByRole('combobox', { name: 'Language', exact: true }).selectOption('th');
+  await page.getByRole('button', { name: 'ไทย', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'th');
   await expect(page.getByRole('heading', { name: 'เอกสารของคุณ', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'เลือกหน้า 1 จาก finishing.pdf', exact: true }).click();
@@ -354,6 +354,6 @@ test('Thai controls, validation, preview, keyboard editing and language preferen
   await page.reload();
   await expect(page.getByRole('button', { name: 'เลือกไฟล์', exact: true })).toBeEnabled();
   await expect(page.locator('html')).toHaveAttribute('lang', 'th');
-  await page.getByRole('combobox', { name: 'ภาษา', exact: true }).selectOption('en');
+  await page.getByRole('button', { name: 'EN', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Choose files', exact: true })).toBeEnabled();
 });
