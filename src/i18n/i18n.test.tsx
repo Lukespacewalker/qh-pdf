@@ -22,13 +22,13 @@ describe('Thai UI translation', () => {
       </I18nProvider>,
     );
 
-    expect(html).toContain('ลาก PDF หรือรูปภาพมาวางที่นี่');
+    expect(html).toContain('เพิ่ม PDF หรือรูปภาพ');
     expect(html).toContain('รวมไฟล์และจัดหน้า PDF');
     expect(html).toContain('เลือกไฟล์');
-    expect(html).toContain('จัดเรียงหน้า');
-    expect(html).toContain('เพิ่มไฟล์ของคุณ');
-    expect(html).toContain('เครื่องมืออื่นจาก Quack &amp; Honk');
-    expect(html).toContain('พบกับ Quack &amp; Honk');
+    expect(html).toContain('จัดหน้า');
+    expect(html).toContain('เพิ่มไฟล์');
+    expect(html).toContain('เว็บไซต์ Quack &amp; Honk');
+    expect(html).toContain('พัฒนาโดย');
     expect(html).not.toContain('Bring your pages');
   });
 

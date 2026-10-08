@@ -37,7 +37,7 @@ export function SavePanel({ count, selectedCount, locked, exporting, onSave, onC
     } catch (error) { setError(error instanceof Error ? error.message : 'Invalid output settings'); }
   }
   return <section className="save-panel" aria-labelledby="save-title">
-    <div className="save-summary"><div><h2 id="save-title">{t('Save your document')}</h2>
+    <div className="save-summary"><div><h2 id="save-title">{t('Save PDF')}</h2>
       <p>{t(count === 1 ? 'Download all {count} page in the order shown.' : 'Download all {count} pages in the order shown.', { count })}</p></div>
       {exporting
         ? <button className="btn danger" onClick={onCancel}>{t('Cancel export')}</button>

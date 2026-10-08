@@ -15,8 +15,8 @@ export function WelcomePanel({ busy, locked, drag, onChoose, onDragChange, onDro
       onDragLeave={() => onDragChange(false)}
       onDrop={event => { event.preventDefault(); onDragChange(false); onDrop(Array.from(event.dataTransfer.files)); }}>
       <MascotState state={busy ? 'working' : 'empty'} alt={busy ? t('Quack working') : t('Quack and Honk arranging PDF pages together')} />
-      <h1 id="welcome-title">{t('Drop PDFs or images here')}</h1>
-      <p className="drop-intro">{t('or choose them from your device')}</p>
+      <h1 id="welcome-title">{t('Add PDFs or images')}</h1>
+      <p className="drop-intro">{t('Drag files here or choose files.')}</p>
       {error}
       <button className="btn primary file-btn" aria-describedby="supported-formats" onClick={onChoose} disabled={locked}>
         <Icon name="file" />{busy ? t('Preparing pages…') : t('Choose files')}

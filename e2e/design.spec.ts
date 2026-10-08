@@ -4,7 +4,7 @@ import { PDFDocument } from 'pdf-lib';
 test('desktop homepage starts with a full-width PDF import and explains the tools below', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop PDFs or images here');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add PDFs or images');
   const chooser = page.getByRole('button', { name: 'Choose files', exact: true });
   await expect(chooser).toBeEnabled();
   await expect(chooser).toBeInViewport();
@@ -35,14 +35,14 @@ for (const width of [320, 390, 768]) {
   test(`homepage at ${width}px keeps import and formats visible without overflow`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop PDFs or images here');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add PDFs or images');
     const chooser = page.getByRole('button', { name: 'Choose files', exact: true });
     await expect(chooser).toBeEnabled();
     await expect(chooser).toBeInViewport();
     await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect((await chooser.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await page.getByRole('link', { name: 'Explore Quack & Honk (opens in a new tab)' }).scrollIntoViewIfNeeded();
+    await page.getByRole('link', { name: 'Visit Quack & Honk (opens in a new tab)' }).scrollIntoViewIfNeeded();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 }
@@ -62,14 +62,14 @@ test('compact header switches language with the keyboard and keeps Thai import v
   await page.keyboard.press('Enter');
   await expect(thai).toHaveAttribute('aria-pressed', 'true');
   await expect(english).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('ลาก PDF หรือรูปภาพมาวางที่นี่');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('เพิ่ม PDF หรือรูปภาพ');
   await expect(page.getByRole('button', { name: 'เลือกไฟล์', exact: true })).toBeInViewport();
   await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.reload();
   await expect(thai).toHaveAttribute('aria-pressed', 'true');
   await english.click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Drop PDFs or images here');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add PDFs or images');
 });
 
 test('editorial fonts decode from same-origin bundled assets', async ({ page, baseURL }) => {
