@@ -19,7 +19,22 @@
   font-weight: 600;
   font-display: swap;
 }
+@font-face {
+  font-family: 'Fraunces';
+  src: url('../assets/fonts/fraunces-latin-600-700.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Figtree';
+  src: url('../assets/fonts/figtree-latin-400-800.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+}
 :root {
+  --shell-gutter: 60px;
   --bg: #F3F0EC;
   --surface: #FFFDFA;
   --muted: #EAE4DD;

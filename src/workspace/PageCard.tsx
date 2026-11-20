@@ -75,7 +75,7 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, select
     style={{ transform: CSS.Transform.toString(transform), transition }} aria-label={t('Page {page} from {file}', { page: index + 1, file: doc.fileName })}
     onFocusCapture={event => {
       const toolbar = document.querySelector<HTMLElement>('.toolbar');
-      if (!toolbar || !(event.target instanceof HTMLElement)) return;
+      if (!toolbar || getComputedStyle(toolbar).position !== 'sticky' || !(event.target instanceof HTMLElement)) return;
       if (!event.target.matches(':focus-visible')) return;
       const toolbarRect = toolbar.getBoundingClientRect();
       const targetRect = event.target.getBoundingClientRect();
@@ -104,10 +104,11 @@ export function PageCard({ page, index, doc, engine, scheduler, disabled, select
       {previewFailed && <span role="status">{t('Preview unavailable')}</span>}
     </button>
     <div className="meta"><strong title={doc.fileName}>{doc.fileName}</strong><span>{page.rotation ? `${page.rotation}°` : ''}</span></div>
-    <div className="page-actions"><button className="btn" onClick={() => move(page.id, -1)} disabled={disabled || index === 0} aria-label={t('Move page {page} left', { page: index + 1 })}><Icon name="left" /></button>
-    <button className="btn page-preview-button" type="button" disabled={disabled}
-      aria-label={t('Preview page {page} from {file}', { page: index + 1, file: doc.fileName })}
-      onClick={event => onPreview(page.id, event.currentTarget)}><Icon name="eye" />{t('Preview')}</button>
+    <div className="page-actions">
+      <button className="btn page-preview-button" type="button" disabled={disabled}
+        aria-label={t('Preview page {page} from {file}', { page: index + 1, file: doc.fileName })}
+        onClick={event => onPreview(page.id, event.currentTarget)}><Icon name="eye" />{t('Preview')}</button>
+      <button className="btn" onClick={() => move(page.id, -1)} disabled={disabled || index === 0} aria-label={t('Move page {page} left', { page: index + 1 })}><Icon name="left" /></button>
       <button className="btn" onClick={() => move(page.id, 1)} disabled={disabled || last} aria-label={t('Move page {page} right', { page: index + 1 })}><Icon name="right" /></button>
     </div>
   </article>;

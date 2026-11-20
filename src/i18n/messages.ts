@@ -5,12 +5,16 @@ export const thaiMessages: Readonly<Record<string, string>> = {
   'Arrange pages': 'จัดหน้า',
   'Reorder, rotate, duplicate or delete pages.': 'จัดลำดับ หมุน ทำสำเนา หรือลบหน้า',
   'Download all pages or selected pages.': 'ดาวน์โหลดทุกหน้า หรือเฉพาะหน้าที่เลือก',
-  'Quack & Honk website': 'เว็บไซต์ Quack & Honk',
-  By: 'พัฒนาโดย',
-  'Visit Quack & Honk': 'เว็บไซต์ Quack & Honk',
-  'Visit Quack & Honk (opens in a new tab)': 'เว็บไซต์ Quack & Honk (เปิดในแท็บใหม่)',
-  'Merge & organize': 'รวมและจัดหน้า PDF',
-  'Tools and language': 'เครื่องมือและภาษา',
+  'A Quack & Honk tool': 'เครื่องมือจาก Quack & Honk',
+  'A Quack & Honk tool (opens in a new tab)': 'เครื่องมือจาก Quack & Honk (เปิดในแท็บใหม่)',
+  'Language and related tools': 'ภาษาและเครื่องมือที่เกี่ยวข้อง',
+  'Formats & privacy': 'ฟอร์แมตและความเป็นส่วนตัว',
+  'Import PDF, JPG/JPEG, PNG and WebP. Download all pages or selected pages as a PDF.':
+    'นำเข้า PDF, JPG/JPEG, PNG และ WebP ดาวน์โหลดทุกหน้าหรือเฉพาะหน้าที่เลือกเป็น PDF',
+  'Your documents are processed in this browser without uploads or analytics.':
+    'ประมวลผลเอกสารในเบราว์เซอร์นี้โดยไม่อัปโหลดไฟล์หรือเก็บสถิติการใช้งาน',
+  'Recovery is off by default. Turn on Remember work on this device to keep original files and page edits in this browser until cleared. Passwords and unlocked copies are never saved.':
+    'การกู้คืนงานปิดอยู่ตามค่าเริ่มต้น เปิดจดจำงานบนอุปกรณ์นี้เพื่อเก็บไฟล์ต้นฉบับและการแก้ไขหน้าไว้ในเบราว์เซอร์นี้จนกว่าจะล้างข้อมูล ระบบจะไม่บันทึกรหัสผ่านหรือไฟล์ที่ปลดล็อกแล้ว',
   'QH Image (opens in a new tab)': 'QH Image (เปิดในแท็บใหม่)',
   'Drop PDFs or images here': 'ลาก PDF หรือรูปภาพมาวางที่นี่',
   'Merge and organize PDFs': 'รวมไฟล์และจัดหน้า PDF',
@@ -232,7 +236,6 @@ export const thaiMessages: Readonly<Record<string, string>> = {
     'ดูตัวอย่างไฟล์ส่งออกไม่ได้ โปรดตรวจสอบขนาดและระยะขอบของเลขหน้า หรือข้อความและขนาดลายน้ำ',
   'Rendering export preview…': 'กำลังแสดงตัวอย่างไฟล์ส่งออก…',
 
-  'Import document files': 'นำเข้าไฟล์เอกสาร',
   Undo: 'เลิกทำ',
   Redo: 'ทำซ้ำ',
   'Quack working': 'Quack กำลังทำงาน',
