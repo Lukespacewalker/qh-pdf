@@ -9,3 +9,5 @@ Sources:
 - https://github.com/google/fonts/tree/main/ofl/dmsans
 
 CSS imports these files through Vite so deployed font requests remain same-origin `/assets/` GETs. No external font service is used. Non-Latin characters retain readable system fallbacks.
+
+Fraunces (600–700) and Figtree (400–800) are the same self-hosted Latin WOFF2 subsets used by Quack & Honk Image Optimizer at `59f5951`. They are used for the header wordmark and its product label. Their SIL Open Font License 1.1 texts are included in [public/licenses/fonts](../../../public/licenses/fonts).

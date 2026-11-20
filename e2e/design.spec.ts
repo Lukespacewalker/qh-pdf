@@ -42,7 +42,13 @@ for (const width of [320, 390, 768]) {
     await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect((await chooser.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await page.getByRole('link', { name: 'Visit Quack & Honk (opens in a new tab)' }).scrollIntoViewIfNeeded();
+    const sibling = page.getByRole('link', { name: 'QH Image (opens in a new tab)' });
+    const chrome = page.getByRole(width <= 600 ? 'contentinfo' : 'banner');
+    await expect(chrome.getByRole('link', { name: 'QH Image (opens in a new tab)' })).toBeVisible();
+    await expect(sibling).toHaveCount(1);
+    await sibling.scrollIntoViewIfNeeded();
+    await expect(sibling).toBeInViewport();
+    expect((await sibling.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 }
@@ -66,6 +72,11 @@ test('compact header switches language with the keyboard and keeps Thai import v
   await expect(page.getByRole('button', { name: 'เลือกไฟล์', exact: true })).toBeInViewport();
   await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole('button', { name: 'ฟอร์แมตและความเป็นส่วนตัว' }).click();
+  const dialog = page.getByRole('dialog', { name: 'ฟอร์แมตและความเป็นส่วนตัว' });
+  await expect(dialog.getByText(/นำเข้า PDF, JPG\/JPEG, PNG และ WebP/)).toBeVisible();
+  expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+  await dialog.getByRole('button', { name: 'ปิด' }).click();
   await page.reload();
   await expect(thai).toHaveAttribute('aria-pressed', 'true');
   await english.click();
@@ -79,12 +90,13 @@ test('editorial fonts decode from same-origin bundled assets', async ({ page, ba
   const fonts = await page.evaluate(async () => {
     const display = await document.fonts.load('40px "DM Serif Display"');
     const body = await document.fonts.load('16px "DM Sans"');
-    return { display: display.length, body: body.length, loaded: [...display, ...body].every(font => font.status === 'loaded') };
+    const wordmark = await document.fonts.load('600 25px Fraunces');
+    const product = await document.fonts.load('500 13px Figtree');
+    return [display, body, wordmark, product].every(faces =>
+      faces.length > 0 && faces.every(face => face.status === 'loaded'));
   });
-  expect(fonts.display).toBeGreaterThan(0);
-  expect(fonts.body).toBeGreaterThan(0);
-  expect(fonts.loaded).toBe(true);
-  expect(requests.length).toBeGreaterThanOrEqual(2);
+  expect(fonts).toBe(true);
+  expect(requests.length).toBeGreaterThanOrEqual(4);
   for (const request of requests) {
     const url = new URL(request);
     expect(url.origin).toBe(new URL(baseURL!).origin);
@@ -109,6 +121,36 @@ test('warm workspace keeps long filenames and page actions usable on a narrow sc
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole('button', { name: 'Move page 1 right', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Save PDF', exact: true })).toBeEnabled();
+});
+
+test('page actions stay visible and follow reading order when tabbing on a short screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 360 });
+  await page.goto('/');
+  const pdf = await PDFDocument.create();
+  for (let index = 0; index < 3; index++) pdf.addPage([240, 360]);
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'short-screen.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await pdf.save()),
+  });
+  const card = page.getByRole('article', { name: 'Page 2 from short-screen.pdf' });
+  const thumbnail = card.getByRole('button', { name: 'Select page 2 from short-screen.pdf' });
+  await thumbnail.focus();
+  const actions = [
+    card.getByRole('button', { name: 'Preview page 2 from short-screen.pdf' }),
+    card.getByRole('button', { name: 'Move page 2 left' }),
+    card.getByRole('button', { name: 'Move page 2 right' }),
+  ];
+  for (const action of actions) {
+    await page.keyboard.press('Tab');
+    await expect(action).toBeFocused();
+    await expect(action).toBeInViewport();
+    expect(await action.evaluate(element => {
+      const { left, top, width, height } = element.getBoundingClientRect();
+      return element.contains(document.elementFromPoint(left + width / 2, top + height / 2));
+    })).toBe(true);
+  }
+  await page.keyboard.press('Shift+Tab');
+  await expect(actions[1]).toBeFocused();
+  expect((await actions[0].boundingBox())!.y).toBeLessThan((await actions[1].boundingBox())!.y);
 });
 
 test('homepage remains readable and usable with 200 percent content zoom', async ({ page }) => {

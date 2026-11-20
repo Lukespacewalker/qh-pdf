@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, pointerWithin, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { MascotState } from '../brand/MascotState';
-import { BrandBanner } from '../brand/BrandBanner';
 import { createSelectedExportWorkspace, type WorkspaceState } from '../domain/workspace';
 import type { ExportProgress, PdfEngine } from '../engine/PdfEngine';
 import { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
@@ -140,8 +139,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
     }
   }
   function cancelExport() { exportJob.current?.abort(); }
-  const fileInput = <input ref={input} className="hidden-input" type="file" multiple
-    aria-label={t('Import document files')} accept="application/pdf,image/jpeg,image/png,image/webp"
+  const fileInput = <input ref={input} hidden type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp"
     disabled={editLocked} onChange={event => {
       const files = Array.from(event.currentTarget.files ?? []);
       event.currentTarget.value = '';
@@ -238,7 +236,6 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
       </>}
     </div>
     <RecoveryPanel importDocument={importDocument} locked={locked || Boolean(activePage)} onRestoring={setRestoring} onPending={setRecoveryPending} />
-    <BrandBanner />
     <details className="shortcut-help"><summary>{t('Keyboard shortcuts')}</summary>
       <dl><dt>Ctrl / ⌘ Z</dt><dd>{t('Undo')}</dd><dt>Ctrl / ⌘ Shift Z · Ctrl Y</dt><dd>{t('Redo')}</dd>
         <dt>Ctrl / ⌘ A</dt><dd>{t('Select all pages')}</dd><dt>Ctrl / ⌘ D</dt><dd>{t('Duplicate selected pages')}</dd>

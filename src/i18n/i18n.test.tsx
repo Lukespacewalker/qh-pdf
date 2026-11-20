@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { BrandBanner } from '../brand/BrandBanner';
+import { SiteFooter } from '../brand/SiteFooter';
 import { Capabilities } from '../workspace/Capabilities';
 import { initialOutputDraft, OutputOptions } from '../workspace/OutputOptions';
 import { WelcomePanel } from '../workspace/WelcomePanel';
@@ -18,7 +18,7 @@ describe('Thai UI translation', () => {
       <I18nProvider initialLanguage="th">
         <WelcomePanel busy={false} locked={false} drag={false} onChoose={() => {}} onDragChange={() => {}} onDrop={() => {}} error={null} history={null} />
         <Capabilities />
-        <BrandBanner />
+        <SiteFooter />
       </I18nProvider>,
     );
 
@@ -27,8 +27,8 @@ describe('Thai UI translation', () => {
     expect(html).toContain('เลือกไฟล์');
     expect(html).toContain('จัดหน้า');
     expect(html).toContain('เพิ่มไฟล์');
-    expect(html).toContain('เว็บไซต์ Quack &amp; Honk');
-    expect(html).toContain('พัฒนาโดย');
+    expect(html).toContain('เครื่องมือจาก Quack &amp; Honk');
+    expect(html).toContain('ฟอร์แมตและความเป็นส่วนตัว');
     expect(html).not.toContain('Bring your pages');
   });
 
