@@ -260,6 +260,8 @@ export const thaiMessages: Readonly<Record<string, string>> = {
   'Combine documents, rearrange pages, or turn pictures into a PDF.': 'รวมเอกสาร จัดเรียงหน้าใหม่ หรือเปลี่ยนรูปภาพเป็น PDF',
   'Drop your files here to get started.': 'ลากไฟล์มาวางที่นี่เพื่อเริ่มต้น',
   'Preparing pages…': 'กำลังเตรียมหน้า…',
+  'The editing tools couldn’t load. Your documents are still in this tab. To try again, reload and reopen your original files.':
+    'โหลดเครื่องมือแก้ไขหน้าไม่สำเร็จ เอกสารยังอยู่ในแท็บนี้ หากต้องการลองอีกครั้ง ให้โหลดหน้าใหม่แล้วเปิดไฟล์ต้นฉบับอีกครั้ง',
   'Choose files': 'เลือกไฟล์',
   'Your documents stay on this device.': 'เอกสารของคุณจะอยู่ในอุปกรณ์นี้เท่านั้น',
   'Free to use. No account needed.': 'ใช้ฟรี ไม่ต้องมีบัญชี',

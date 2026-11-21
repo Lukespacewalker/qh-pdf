@@ -19,6 +19,24 @@ test('serves the workspace with browser security headers', async ({ page }) => {
   expect(headers['content-security-policy']).toContain("connect-src 'self' blob:");
   expect(headers['referrer-policy']).toBe('no-referrer');
   expect(headers['x-content-type-options']).toBe('nosniff');
+  await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href', 'https://pdf.quackandhonk.com/');
   await expect(page.getByRole('button', { name: 'Choose files', exact: true })).toBeVisible();
   expect(violations).toEqual([]);
+});
+
+test('fingerprinted files are immutable and the asset directory serves no app shell', async ({ page, request }) => {
+  await page.goto('/');
+  const script = await page.locator('script[type=module][src]').getAttribute('src');
+  const stylesheet = await page.locator('link[rel=stylesheet]').getAttribute('href');
+  for (const path of [script, stylesheet]) {
+    expect(path).toMatch(/^\/assets\//);
+    const response = await request.get(path!);
+    expect(response.ok()).toBe(true);
+    expect(response.headers()['cache-control']).toBe('public, max-age=31536000, immutable');
+    expect(response.headers()['x-content-type-options']).toBe('nosniff');
+  }
+
+  const missing = await request.get('/assets/not-a-built-file.js');
+  expect(missing.status()).toBe(404);
+  expect(await missing.text()).not.toContain('<div id="root">');
 });

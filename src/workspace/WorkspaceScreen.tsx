@@ -1,20 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter, pointerWithin, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { MascotState } from '../brand/MascotState';
 import { createSelectedExportWorkspace, type WorkspaceState } from '../domain/workspace';
 import type { ExportProgress, PdfEngine } from '../engine/PdfEngine';
-import { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
 import { RecoveryPanel } from '../recovery/RecoveryPanel';
-import { FullPagePreviewDialog } from './FullPagePreviewDialog';
-import { PageCard } from './PageCard';
 import { RelatedTools } from '../brand/RelatedTools';
-import { SavePanel, type SaveTarget } from './SavePanel';
 import { usePasswordImport } from './usePasswordImport';
 import { useWorkspaceStore } from './useWorkspaceStore';
+import type { SaveTarget } from './SavePanel';
 import { WelcomePanel } from './WelcomePanel';
 import { Icon } from '../components/Icon';
-import { CropDialog } from './CropDialog';
 import { workspaceShortcut } from './workspaceShortcut';
 import type { PdfOutputSettings } from '../domain/exportOptions';
 import { useI18n } from '../i18n/i18n';
@@ -39,8 +33,9 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
   const [restoring, setRestoring] = useState(false);
   const [recoveryPending, setRecoveryPending] = useState(true);
   const [activePage, setActivePage] = useState<string | null>(null);
-  const [preview, setPreview] = useState<{ pageId: string; opener: HTMLButtonElement } | null>(null);
-  const [cropOpener, setCropOpener] = useState<HTMLButtonElement | null>(null);
+  const [editor, setEditor] = useState<typeof import('./ActiveWorkspace') | 'unavailable'>();
+  const editorLoad = useRef<Promise<typeof import('./ActiveWorkspace')> | null>(null);
+
   const [done, setDone] = useState(false);
   const [savedBytes, setSavedBytes] = useState(0);
   const [compressionInfo, setCompressionInfo] = useState<{ beforeBytes: number; afterBytes: number } | null>(null);
@@ -51,14 +46,21 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
   const store = useWorkspaceStore();
   const ws = store.history.present;
   const locked = store.busy || exporting || restoring;
-  const editLocked = locked || recoveryPending || Boolean(activePage);
+  const Editor = editor === 'unavailable' ? undefined : editor?.ActiveWorkspace;
+  const needsEditor = store.busy || restoring || ws.pages.length > 0;
+  const editLocked = locked || recoveryPending || Boolean(activePage) || (ws.pages.length > 0 && !Editor);
   const selected = ws.selectedPageIds.length;
   const { importDocument, passwordDialog } = usePasswordImport(engine);
-  const thumbnailScheduler = useMemo(() => new ThumbnailScheduler(2), []);
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
+  useEffect(() => {
+    if (editor || !needsEditor) return;
+    let current = true;
+    editorLoad.current ??= import('./ActiveWorkspace');
+    void editorLoad.current.then(
+      module => { if (current) setEditor(module); },
+      () => { if (current) setEditor('unavailable'); },
+    );
+    return () => { current = false; };
+  }, [editor, needsEditor]);
   useEffect(() => { setDone(false); }, [ws.pages]);
   useEffect(() => () => exportJob.current?.abort(), []);
   useEffect(() => {
@@ -155,58 +157,13 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
           <div><p className="eyebrow">{t('Document workspace')}</p><h1>{t('Your document')}</h1><p className="sub">{t('{count} pages', { count: ws.pages.length })}</p></div>
           <div className="document-actions">
             <button className="btn add-files" onClick={() => input.current?.click()} disabled={editLocked}><Icon name="add" />{t('Add files')}</button>
-            <a href="#compression-level">{t('Compression settings')}</a>
+            {Editor && <a href="#compression-level">{t('Compression settings')}</a>}
           </div>
         </div>
         {error}
-        <div className="page-editing-region">
-        <div className="toolbar" role="group" aria-label={t('Page editing tools')}>
-          {historyActions}
-          <div className="selection-tools" role="group" aria-label={t('Page selection tools')}>
-            <button className="btn" onClick={store.selectAll} disabled={editLocked || selected === ws.pages.length}><Icon name="select" />{t('Select all')}</button>
-            <button className="btn" onClick={store.deselectAll} disabled={editLocked || !selected}><Icon name="deselect" />{t('Deselect all')}</button>
-            <output className="selection-count" role="status" aria-label={t('Selected pages')}>{t('{selected} of {total} selected', { selected, total: ws.pages.length })}</output>
-          </div>
-          <span className="spacer" />
-          <div className="edit-tools">
-            <button className="btn" aria-label={t('Rotate left')} onClick={() => store.rotate(-90)} disabled={editLocked || !selected}><Icon name="rotate-left" />{t('Rotate left')}</button>
-            <button className="btn" aria-label={t('Rotate right')} onClick={() => store.rotate(90)} disabled={editLocked || !selected}><Icon name="rotate-right" />{t('Rotate right')}</button>
-            <button className="btn" onClick={store.duplicate} disabled={editLocked || !selected}><Icon name="copy" />{t('Duplicate')}</button>
-            <button className="btn danger" onClick={store.remove} disabled={editLocked || !selected}><Icon name="trash" />{t('Delete')}</button>
-            <button className="btn" onClick={event => setCropOpener(event.currentTarget)} disabled={editLocked || !selected}><Icon name="crop" />{t('Crop')}</button>
-          </div>
-        </div>
-        <p className="arrange-hint">{t('Click a page to select it, use Shift for a range, or Ctrl / Command to add pages. The checkbox adds a page on touch and keyboard. Drag the handle or use arrows to reorder.')}</p>
-        <DndContext sensors={sensors} collisionDetection={args => args.pointerCoordinates ? pointerWithin(args) : closestCenter(args)}
-          accessibility={{ screenReaderInstructions: {
-            draggable: t('To pick up a page, press Space. While moving, use the arrow keys. Press Space again to drop, or Escape to cancel.'),
-          }, announcements: {
-            onDragStart: ({ active }) => t('Picked up page {page}.', { page: ws.pages.findIndex(page => page.id === active.id) + 1 }),
-            onDragOver: ({ over }) => over ? t('Move to position {position}.', { position: ws.pages.findIndex(page => page.id === over.id) + 1 }) : t('Outside the page area. Drop to cancel.'),
-            onDragEnd: ({ over }) => over ? t('Page moved to position {position}.', { position: ws.pages.findIndex(page => page.id === over.id) + 1 }) : t('Page move cancelled.'),
-            onDragCancel: () => t('Page move cancelled.'),
-          } }}
-          onDragStart={event => setActivePage(String(event.active.id))}
-          onDragCancel={() => setActivePage(null)}
-          onDragEnd={({ active, over }) => {
-            if (!locked && over) store.reorder(String(active.id), String(over.id));
-            setActivePage(null);
-          }}>
-          <SortableContext items={ws.pages.map(page => page.id)} strategy={rectSortingStrategy}>
-            <section className="grid" aria-label={t('Document pages')}>{ws.pages.map((page, index) => {
-              const doc = store.documents.get(page.sourceDocumentId);
-              if (!doc) return <div className="notice" role="alert" key={page.id}>{t('The source for page {page} is missing. Undo the last change or add the document again.', { page: index + 1 })}</div>;
-              return <PageCard key={page.id} page={page} index={index} doc={doc} engine={engine}
-                scheduler={thumbnailScheduler} disabled={locked || recoveryPending} selectionDisabled={editLocked}
-                last={index === ws.pages.length - 1}
-                onPreview={(pageId, opener) => setPreview({ pageId, opener })} />;
-            })}</section>
-          </SortableContext>
-          <DragOverlay>{activePage ? <div className="drag-overlay">{t('Moving page {page}', { page: ws.pages.findIndex(page => page.id === activePage) + 1 })}</div> : null}</DragOverlay>
-        </DndContext>
-        </div>
-        <SavePanel count={ws.pages.length} selectedCount={selected} locked={editLocked} exporting={exporting} onSave={save} onCancel={cancelExport} saveButtonRef={saveButton}
-          engine={engine} workspace={ws} documents={store.documents}>
+        {Editor ? <Editor engine={engine} historyActions={historyActions} locked={locked} editLocked={editLocked}
+          recoveryPending={recoveryPending} activePage={activePage} setActivePage={setActivePage} exporting={exporting}
+          saveButton={saveButton} save={save} cancelExport={cancelExport}>
           {exporting && <div className="status" role="status"><MascotState state="working" alt={t('Quack working')} /><div className="export-status">
             <strong>{exportProgress?.phase === 'protecting' ? t('Protecting your PDF…') : exportProgress?.phase === 'compressing' ? t('Compressing your PDF…') :
               t('Creating page {current} of {total}…', { current: exportProgress?.completed ?? 0, total: exportProgress?.total ?? exportTotal })}</strong>
@@ -227,7 +184,9 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
               })
               : t('Compression did not reduce this file’s size.')}</>}
           </div>}
-        </SavePanel>
+        </Editor> : editor === 'unavailable'
+          ? <div className="notice" role="alert">{t('The editing tools couldn’t load. Your documents are still in this tab. To try again, reload and reopen your original files.')}</div>
+          : <p className="sub" role="status">{t('Preparing pages…')}</p>}
       </>}
     </div>
     <RecoveryPanel importDocument={importDocument} locked={locked || Boolean(activePage)} onRestoring={setRestoring} onPending={setRecoveryPending} />
@@ -238,15 +197,6 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
       <p>{t('Shortcuts pause while typing, dragging, processing or using a dialog.')}</p>
     </details>
     {!ws.pages.length && <RelatedTools />}
-    {preview && <FullPagePreviewDialog pageId={preview.pageId} pages={ws.pages} documents={store.documents}
-      engine={engine} opener={preview.opener} onNavigate={pageId => setPreview(current => current ? { ...current, pageId } : null)}
-      onRotate={store.rotatePage} onClose={() => setPreview(null)} />}
     {fileInput}{passwordDialog}
-    {cropOpener && (() => {
-      const page = ws.pages.find(page => ws.selectedPageIds.includes(page.id));
-      const document = page && store.documents.get(page.sourceDocumentId);
-      return page && document ? <CropDialog page={page} document={document} count={selected} engine={engine}
-        opener={cropOpener} onApply={store.crop} onClose={() => setCropOpener(null)} /> : null;
-    })()}
   </main>;
 }
