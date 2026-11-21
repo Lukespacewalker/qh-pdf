@@ -1,6 +1,10 @@
 # PDF import and shared tool header
 
-## Current welcome and compression design, 2026-11-21
+## Welcome page order, 2026-11-22
+
+The full-width drop zone comes first on desktop and mobile. The marketing title, tagline and privacy reassurance follow it as a separate section. This supersedes the split layout below.
+
+## Welcome and compression redesign, 2026-11-21
 
 The header carries the static PDF identity and language switch. The welcome screen mirrors the QH Image redesign with a two-part headline, a short description, and a file picker beside the paired mascot. On narrow screens the introduction sits above the picker. Two compact cards near the footer introduce QH Image and the Quack & Honk studio. The cards appear only in the empty workspace.
 

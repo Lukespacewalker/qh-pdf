@@ -1,22 +1,26 @@
 import { expect, test } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 
-test('desktop homepage pairs the headline with the PDF picker and keeps studio links below it', async ({ page }) => {
+test('desktop homepage opens with a full-width PDF drop zone before the introduction and studio links', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('One PDF, ready to send.');
-  const chooser = page.getByRole('button', { name: 'Choose files', exact: true });
+  const headline = page.getByRole('heading', { level: 1 });
+  await expect(headline).toHaveText('One PDF, ready to send.');
+  const drop = page.getByRole('region', { name: 'Drop PDFs or images here' });
+  const introduction = page.getByRole('region', { name: 'One PDF, ready to send.' });
+  const chooser = drop.getByRole('button', { name: 'Choose files', exact: true });
   await expect(chooser).toBeEnabled();
   await expect(chooser).toBeInViewport();
-  const headline = await page.getByRole('heading', { level: 1 }).boundingBox();
+  await expect(page.locator('.workspace-content > section').first()).toHaveAttribute('aria-labelledby', 'drop-title');
+  await expect(introduction.getByText('Combine PDFs and photos, put the pages in order, and compress your document for sharing.')).toBeVisible();
+  const content = await page.locator('.workspace-content').boundingBox();
+  const importPanel = await drop.boundingBox();
+  const copy = await introduction.boundingBox();
   const related = await page.getByRole('complementary', { name: 'More from Quack & Honk' }).boundingBox();
-  const drop = await page.locator('.drop').boundingBox();
-  expect(headline).not.toBeNull();
-  expect(related).not.toBeNull();
-  expect(drop).not.toBeNull();
-  expect(drop!.x).toBeGreaterThan(headline!.x + headline!.width);
-  expect(headline!.y).toBeLessThan(drop!.y + drop!.height);
-  expect(related!.y).toBeGreaterThanOrEqual(drop!.y + drop!.height);
+  expect(importPanel!.x).toBeCloseTo(content!.x, 1);
+  expect(importPanel!.width).toBeCloseTo(content!.width, 1);
+  expect(copy!.y).toBeGreaterThanOrEqual(importPanel!.y + importPanel!.height);
+  expect(related!.y).toBeGreaterThanOrEqual(copy!.y + copy!.height);
 
   // Keyboard activation proves the prominent control opens the real input.
   await chooser.focus();
@@ -47,7 +51,11 @@ for (const width of [320, 390, 768]) {
       return new URL(image.currentSrc).pathname;
     });
     expect(source).toMatch(new RegExp(`^/assets/quack-honk-pdf-hero-${width <= 440 ? 160 : 256}-.+\\.webp$`));
-    await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
+    const formats = page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true });
+    await expect(formats).toBeInViewport();
+    const formatsBox = (await formats.boundingBox())!;
+    const headlineBox = (await page.getByRole('heading', { level: 1 }).boundingBox())!;
+    expect(headlineBox.y).toBeGreaterThan(formatsBox.y + formatsBox.height);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect((await chooser.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(page.getByRole('banner').getByRole('link')).toHaveCount(0);
