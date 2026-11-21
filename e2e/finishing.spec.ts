@@ -311,6 +311,10 @@ test('Thai mobile compression shortcut focuses the level picker and saves from t
   const pdf = await PDFDocument.load(await readFile((await downloaded.path())!));
   expect(pdf.getPageCount()).toBe(4);
   await expect(page.locator('.save-panel .save-complete')).toBeInViewport();
+  await page.getByRole('button', { name: 'เลือกหน้า 2 จาก finishing.pdf', exact: true }).click();
+  const subset = await download(page, 'บีบอัดและบันทึกหน้าที่เลือก 1 หน้า');
+  expect(subset.getPageCount()).toBe(1);
+  expect((await texts(subset))[0]).toContain('Source 90');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

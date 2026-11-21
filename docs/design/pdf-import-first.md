@@ -4,7 +4,7 @@
 
 The header carries the static PDF identity and language switch. The welcome screen mirrors the QH Image redesign with a two-part headline, a short description, and a file picker beside the paired mascot. On narrow screens the introduction sits above the picker. Two compact cards near the footer introduce QH Image and the Quack & Honk studio. The cards appear only in the empty workspace.
 
-After import, the Compression settings link beside Add files takes keyboard and pointer users directly to the level selector. Choosing a level changes the main action to “Compress & save PDF”. The default is Off. The save panel reports progress, failures and the measured result beside the action.
+After import, the Compression settings link beside Add files takes keyboard and pointer users directly to the level selector. Choosing a level changes both save labels to indicate compression for all pages or the selected subset. The default is Off. The save panel reports progress, failures and the measured result beside the action.
 
 This decision supersedes the earlier full-width desktop picker, literal headline, numbered steps and outbound header link. Earlier decisions below document their original scope.
 

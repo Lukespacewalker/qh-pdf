@@ -53,6 +53,8 @@ export const thaiMessages: Readonly<Record<string, string>> = {
   'Apps and illustrated books by two brothers in Thailand.': 'แอปและหนังสือภาพจากสองพี่น้องชาวไทย',
   'Compression settings': 'ตั้งค่าการบีบอัด',
   'Compress & save PDF': 'บีบอัดและบันทึก PDF',
+  'Compress & save {count} selected page': 'บีบอัดและบันทึกหน้าที่เลือก {count} หน้า',
+  'Compress & save {count} selected pages': 'บีบอัดและบันทึกหน้าที่เลือก {count} หน้า',
   'Choose a level to compress your PDF when you save.': 'หากต้องการลดขนาดไฟล์ ให้เลือกระดับการบีบอัดก่อนบันทึก',
   'Text stays selectable. Already optimized PDFs may stay the same size.':
     'ข้อความยังเลือกคัดลอกได้ ส่วน PDF ที่บีบอัดมาแล้วอาจมีขนาดเท่าเดิม',

@@ -23,6 +23,10 @@ export function SavePanel({ count, selectedCount, locked, exporting, onSave, onC
   const errorRef = useRef<HTMLParagraphElement>(null);
   useEffect(() => { if (error) errorRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' }); }, [error]);
   const [draft, setDraft] = useState(initialOutputDraft);
+  const compress = draft.compression !== 'off';
+  const selectedAction = compress
+    ? (selectedCount === 1 ? 'Compress & save {count} selected page' : 'Compress & save {count} selected pages')
+    : (selectedCount === 1 ? 'Save {count} selected page' : 'Save {count} selected pages');
   const [previewTarget, setPreviewTarget] = useState<SaveTarget>('all');
   const [preview, setPreview] = useState<{ workspace: WorkspaceState; output: PdfOutputSettings; opener: HTMLButtonElement } | null>(null);
   async function submit(target: SaveTarget) {
@@ -55,14 +59,14 @@ export function SavePanel({ count, selectedCount, locked, exporting, onSave, onC
         ? <button className="btn danger" onClick={onCancel}>{t('Cancel export')}</button>
         : <div className="save-actions">
           {selectedCount > 0 && <button className="btn" disabled={locked} onClick={() => void submit('selected')}>
-            {t(selectedCount === 1 ? 'Save {count} selected page' : 'Save {count} selected pages', { count: selectedCount })}
+            {t(selectedAction, { count: selectedCount })}
           </button>}
-          <button ref={saveButtonRef} className="btn primary" disabled={locked} onClick={() => void submit('all')}><Icon name="download" />{t(draft.compression === 'off' ? 'Save PDF' : 'Compress & save PDF')}</button>
+          <button ref={saveButtonRef} className="btn primary" disabled={locked} onClick={() => void submit('all')}><Icon name="download" />{t(compress ? 'Compress & save PDF' : 'Save PDF')}</button>
         </div>}
     </div>
-    <p className="save-options-note" id="compression-hint">{t(draft.compression === 'off'
-      ? 'Choose a level to compress your PDF when you save.'
-      : 'Text stays selectable. Already optimized PDFs may stay the same size.')}</p>
+    <p className="save-options-note" id="compression-hint">{t(compress
+      ? 'Text stays selectable. Already optimized PDFs may stay the same size.'
+      : 'Choose a level to compress your PDF when you save.')}</p>
     {error && <p ref={errorRef} className="notice" role="alert">{t(error)}</p>}
     {children}
     <OutputOptions draft={draft} onChange={next => { setDraft(next); setError(''); }} count={previewTarget === 'all' ? count : selectedCount} disabled={locked} />

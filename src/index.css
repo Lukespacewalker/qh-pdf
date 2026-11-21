@@ -243,7 +243,7 @@
   .topbar-meta, .site-footer { font-size: 12px; }
   .footer-credit { gap: 12px; }
   .footer-actions { flex-wrap: wrap; }
-  .footer-actions .footer-sibling-link { display: inline-flex; }
+  .workspace-layout:not(.empty-wrap) + .site-footer .footer-sibling-link { display: inline-flex; }
   .full-page-preview-dialog { width: calc(100vw - 16px); height: calc(100dvh - 16px); border-radius: 8px; }
   .full-page-preview-header { padding: 14px 12px 10px; }
   .full-page-preview-header h2 { font-size: 25px; }

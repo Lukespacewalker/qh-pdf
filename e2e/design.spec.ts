@@ -46,7 +46,7 @@ for (const width of [320, 390, 768]) {
     const related = page.getByRole('complementary', { name: 'More from Quack & Honk' });
     const sibling = related.getByRole('link', { name: 'QH Image (opens in a new tab)' });
     await expect(related.getByRole('link')).toHaveCount(2);
-    await expect(sibling).toHaveCount(1);
+    await expect(page.getByRole('link', { name: 'QH Image (opens in a new tab)' })).toHaveCount(1);
     await sibling.scrollIntoViewIfNeeded();
     await expect(sibling).toBeInViewport();
     expect((await sibling.boundingBox())!.height).toBeGreaterThanOrEqual(44);
