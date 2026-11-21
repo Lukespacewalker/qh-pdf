@@ -9,9 +9,7 @@
 .wordmark-name { display: flex; align-items: baseline; gap: .17em; font: 600 25px/1.2 'Fraunces', Georgia, serif; letter-spacing: -.055em; }
 .wordmark-name span { color: #9C3F2B; }
 .wordmark-product { color: var(--secondary); font: 500 13px/1.25 'Figtree', var(--body); letter-spacing: .015em; }
-.topbar-meta { display: flex; align-items: center; gap: 28px; margin-left: auto; font-size: 14px; }
-.sibling-link { display: flex; align-items: center; gap: 12px; min-height: 44px; padding-left: 28px; border-left: 1px solid var(--border); color: var(--text); text-decoration: none; white-space: nowrap; }
-.sibling-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.topbar-meta { margin-left: auto; font-size: 14px; }
 .shell { width: min(1440px, 100%); margin: auto; padding: 38px var(--shell-gutter) 22px; }
 .workspace-layout { display: flex; flex-direction: column; gap: 24px; align-items: stretch; }
 .workspace-content { min-width: 0; }
@@ -27,35 +25,38 @@
 .sub { color: var(--secondary); line-height: 1.5; }
 .mascot { display: block; width: 112px; height: 112px; object-fit: contain; }
 
-/* Full-width import comes before the tool explanations. */
-.empty-wrap { padding-top: 32px; }
-.welcome-hero { padding-bottom: 32px; }
-.welcome-reassurance { display: flex; flex-wrap: wrap; gap: 6px 24px; margin-top: 24px; color: var(--secondary); font-size: 13px; line-height: 1.6; }
-.welcome-reassurance p { margin: 5px 0; }
-.welcome-reassurance p:first-child { display: flex; align-items: center; gap: 8px; }
+/* Welcome and studio links */
+.empty-wrap { padding-top: clamp(36px, 5vw, 72px); }
+.welcome-hero { display: grid; grid-template-columns: minmax(0, .93fr) minmax(0, 1.07fr); gap: clamp(32px, 6vw, 96px); align-items: center; padding-bottom: 24px; }
+.welcome-copy { max-width: 520px; }
+.welcome-copy .eyebrow { color: var(--primary); letter-spacing: .13em; margin-bottom: 12px; }
+.welcome-copy h1 { margin: 0; font: 400 clamp(48px, 5.25vw, 76px)/1.03 var(--display); letter-spacing: -.045em; }
+.welcome-copy h1 span { display: block; color: #41614d; }
+.welcome-reassurance { display: flex; flex-wrap: wrap; gap: 3px 16px; margin-top: 16px; color: var(--secondary); font-size: 13px; line-height: 1.6; }
+.welcome-reassurance p { margin: 0; }
+.welcome-reassurance p:first-child { display: flex; align-items: center; gap: 8px; color: #41614d; }
 .welcome-reassurance .icon { width: 14px; height: 14px; }
-.drop { position: relative; min-width: 0; padding: 42px 32px 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; text-align: center; box-shadow: var(--shadow); }
+.drop { position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 0; min-height: 315px; padding: 26px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; text-align: center; box-shadow: var(--shadow); }
 .drop::before { content: ''; position: absolute; inset: 12px; border: 1px dashed #B5A597; border-radius: 5px; pointer-events: none; }
 .drop.drag { background: #ECE2D8; border-color: var(--primary); }
 .drop.drag::before { border-color: var(--primary); border-width: 2px; }
-.drop .mascot { margin: 0 auto 18px; width: 120px; height: 120px; }
-.drop .mascot-welcome { width: 320px; height: 160px; max-width: 100%; }
-.drop h1 { margin: 0; font-family: var(--display); font-size: clamp(30px, 3vw, 42px); font-weight: 400; letter-spacing: -.025em; line-height: 1.2; }
-.drop-intro { margin: 10px 0 22px; color: var(--secondary); font-size: 18px; line-height: 1.5; }
-.file-btn { min-height: 64px; width: min(380px, 100%); font-size: 20px; }
-.file-btn .icon { width: 24px; height: 24px; }
-.formats { margin: 16px 0 0; color: var(--secondary); font-size: 14px; line-height: 1.5; }
+.drop .mascot { width: 250px; max-width: 100%; height: 125px; }
+.drop-title { margin: 8px 0 12px; font: 400 clamp(21px, 2.2vw, 29px)/1.3 var(--display); letter-spacing: -.02em; }
+.drop-intro { margin: 16px 0 0; max-width: 45ch; color: var(--secondary); font-size: clamp(15px, 1.2vw, 18px); line-height: 1.65; }
+.file-btn { min-height: 48px; width: min(100%, 202px); font-size: 16px; }
+.formats { margin: 10px 0 0; color: var(--secondary); font-size: 12px; line-height: 1.5; }
 .welcome-history { margin-top: 18px; }
 .welcome-history .history-tools { justify-content: center; border: 0; padding: 0; }
-.capabilities { border-top: 1px solid var(--border); padding: 30px 0 6px; }
-.capabilities > h2 { margin: 0; font-family: var(--display); font-size: 30px; font-weight: 400; line-height: 1.3; }
-.capability-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 24px; }
-.capability { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 18px; padding: 0 24px; border-left: 1px solid var(--border); }
-.capability:first-child { padding-left: 0; border: 0; }
-.capability:last-child { padding-right: 0; }
-.capability-number { font-family: var(--display); font-size: 24px; color: var(--primary); line-height: 1.25; }
-.capability h3 { font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.25; letter-spacing: -.02em; margin: 0 0 10px; }
-.capability p { margin: 0; color: var(--secondary); font-size: 15px; line-height: 1.7; }
+.related-tools { border-top: 1px solid var(--border); padding-top: 18px; }
+.related-tools h2 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+.related-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.related-links a { flex: 1 1 19rem; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 11px 14px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); text-decoration: none; }
+.related-links a:hover, .related-links a:focus-visible { background: var(--surface); border-color: var(--control-border); }
+.related-mark { flex: none; display: grid; place-items: center; width: 36px; height: 36px; }
+.studio-mark { font: 22px var(--display); letter-spacing: -.08em; border-radius: 8px; background: var(--muted); color: var(--primary); }
+.related-links h3 { margin: 0; font: 600 18px/1.35 'Fraunces', var(--body); }
+.related-links p { margin: 2px 0 0; color: var(--secondary); font-size: 13px; line-height: 1.5; }
+.related-links .icon { margin-inline-start: auto; color: var(--secondary); width: 15px; height: 15px; }
 
 /* Active document workspace */
 .head { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 26px; }
@@ -63,6 +64,8 @@
 .head h1 { font-family: var(--display); font-size: 48px; font-weight: 400; letter-spacing: -.03em; line-height: 1.1; margin: 0; }
 .head .sub { margin: 10px 0 0; font-size: 14px; }
 .add-files { min-width: 126px; }
+.document-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 18px; }
+.document-actions a { display: inline-flex; align-items: center; min-height: 44px; color: var(--primary); font-size: 14px; text-underline-offset: 3px; }
 .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; position: sticky; top: 12px; z-index: 10; box-shadow: var(--shadow); margin-bottom: 16px; }
 .toolbar .btn { border-color: transparent; background: transparent; font-size: 12px; padding-inline: 9px; }
 .toolbar .btn:hover:not(:disabled) { background: var(--muted); border-color: var(--border); }
@@ -98,7 +101,10 @@
 
 /* Download, feedback and local recovery */
 .save-panel { margin-top: 30px; padding: 24px; border: 1px solid var(--border); border-top: 2px solid var(--primary); border-radius: 7px; background: var(--surface); }
-.save-summary { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 18px; }
+.save-summary { margin-bottom: 18px; }
+.save-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 12px 22px; }
+.compression-field { flex: 0 1 21rem; min-width: 0; }
+#compression-level { min-height: 44px; scroll-margin-block-start: 6rem; }
 .save-summary h2 { font-family: var(--display); font-size: 30px; font-weight: 400; line-height: 1.2; letter-spacing: -.025em; margin: 0; }
 .save-summary p { margin: 8px 0 0; color: var(--secondary); font-size: 13px; line-height: 1.5; }
 .save-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
@@ -138,7 +144,7 @@
 .footer-credit a { color: var(--text); }
 .footer-actions button { padding: 0; border: 0; background: transparent; text-align: start; }
 .site-footer a:hover, .footer-actions button:hover { text-decoration: underline; }
-.site-footer .icon, .sibling-link .icon { width: 16px; height: 16px; }
+.site-footer .icon { width: 16px; height: 16px; }
 .footer-actions .footer-sibling-link { display: none; }
 
 /* Native password dialog and focused document preview */
@@ -167,38 +173,26 @@
   .topbar { gap: 22px; }
   .drop { padding-inline: 26px; }
   .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-  .capability { gap: 12px; padding-inline: 18px; }
-  .capability h3 { font-size: 22px; }
 }
 @media (max-width: 860px) {
   .topbar { min-height: 80px; }
   .empty-wrap { padding-top: 28px; }
-  .welcome-hero { padding-bottom: 28px; }
-  .welcome-reassurance { margin-top: 16px; font-size: 13px; }
-  .drop { padding: 24px; }
-  .drop .mascot { width: 90px; height: 90px; margin-bottom: 10px; }
-  .drop .mascot-welcome { width: 180px; height: 90px; }
-  .drop h1 { font-size: 34px; }
-  .drop-intro { margin: 8px 0 16px; font-size: 15px; }
-  .file-btn { width: min(320px, 100%); min-height: 52px; font-size: 17px; }
-  .formats { font-size: 12px; }
-  .save-summary { align-items: flex-start; }
 }
 @media (max-width: 720px) {
   .shell { padding-block: 24px 18px; }
   .workspace-layout { gap: 20px; }
-  .welcome-reassurance { font-size: 12px; margin-top: 16px; }
-  .drop .mascot { width: 90px; height: 90px; }
-  .drop .mascot-welcome { width: 180px; }
-  .drop h1 { font-size: 30px; }
-  .drop-intro { font-size: 13px; }
-  .file-btn { font-size: 15px; min-height: 48px; }
-  .formats { margin-top: 12px; font-size: 11px; }
-  .capabilities { padding-top: 24px; }
-  .capabilities > h2 { font-size: 26px; }
-  .capability-grid { grid-template-columns: 1fr; gap: 22px; }
-  .capability, .capability:first-child, .capability:last-child { border: 0; padding: 0; gap: 14px; }
-  .capability h3 { margin-bottom: 6px; }
+  .welcome-hero { grid-template-columns: 1fr; gap: 18px; padding-bottom: 0; }
+  .welcome-copy .eyebrow { margin-bottom: 6px; }
+  .welcome-copy h1 { font-size: clamp(34px, 7.6vw, 48px); }
+  .welcome-copy h1 span { display: inline; }
+  .drop-intro, .welcome-reassurance { margin-top: 10px; }
+  .drop { display: grid; grid-template-columns: minmax(70px, .65fr) minmax(0, 1fr); justify-items: center; column-gap: 12px; min-height: 0; padding: 24px; }
+  .drop .mascot { grid-row: span 2; width: min(100%, 180px); height: auto; max-height: 92px; }
+  .drop-title { margin: 0 0 6px; align-self: end; font-size: 20px; }
+  .file-btn { grid-column: 2; align-self: start; }
+  .formats, .drop .notice, .welcome-history { grid-column: 1 / -1; }
+  .drop:has(.notice) { display: flex; }
+  .drop:has(.notice) .file-btn { align-self: center; }
   .head { gap: 12px; margin-bottom: 20px; }
   .head h1 { font-size: 36px; }
   .head .eyebrow { font-size: 9px; margin-bottom: 8px; }
@@ -227,7 +221,9 @@
   .page-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .page-actions .page-preview-button { grid-column: 1 / -1; }
   .save-panel { padding: 18px; }
-  .save-summary { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  .document-actions { flex-direction: column; align-items: end; gap: 0; }
+  .document-actions a { text-align: end; font-size: 13px; }
+  .compression-field, .save-controls .save-actions { flex: 1 1 100%; }
   .save-summary h2 { font-size: 28px; }
   .save-actions { justify-content: stretch; }
   .save-actions .btn { flex: 1 1 auto; }
@@ -245,7 +241,6 @@
   .wordmark-name { font-size: 19px; }
   .wordmark-product { font-size: 11px; }
   .topbar-meta, .site-footer { font-size: 12px; }
-  .sibling-link { display: none; }
   .footer-credit { gap: 12px; }
   .footer-actions { flex-wrap: wrap; }
   .footer-actions .footer-sibling-link { display: inline-flex; }
@@ -268,7 +263,6 @@
   .page-selection span { display: none; }
   .toolbar .history-tools .icon { display: none; }
   .toolbar .btn { gap: 5px; }
-  .drop h1 { font-size: 27px; }
 }
 @media (max-height: 480px) {
   .toolbar { position: static; }

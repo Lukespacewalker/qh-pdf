@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
-import type { PdfOutputSettings } from '../domain/exportOptions';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import type { CompressionLevel, PdfOutputSettings } from '../domain/exportOptions';
 import { createSelectedExportWorkspace, type WorkspaceState } from '../domain/workspace';
 import type { ImportedDocument, PdfEngine } from '../engine/PdfEngine';
 import { useI18n } from '../i18n/i18n';
@@ -9,11 +9,11 @@ import { Icon } from '../components/Icon';
 
 export type SaveTarget = 'all' | 'selected';
 
-export function SavePanel({ count, selectedCount, locked, exporting, onSave, onCancel, saveButtonRef, engine, workspace, documents }: {
+export function SavePanel({ count, selectedCount, locked, exporting, onSave, onCancel, saveButtonRef, engine, workspace, documents, children }: {
   count: number; selectedCount: number; locked: boolean; exporting: boolean;
   onSave: (target: SaveTarget, password?: string, output?: PdfOutputSettings) => Promise<boolean>; onCancel: () => void;
   saveButtonRef: RefObject<HTMLButtonElement | null>;
-  engine: PdfEngine; workspace: WorkspaceState; documents: ReadonlyMap<string, ImportedDocument>;
+  engine: PdfEngine; workspace: WorkspaceState; documents: ReadonlyMap<string, ImportedDocument>; children: ReactNode;
 }) {
   const { t } = useI18n();
   const [protect, setProtect] = useState(false);
@@ -34,21 +34,37 @@ export function SavePanel({ count, selectedCount, locked, exporting, onSave, onC
     try {
       const output = outputSettings(draft, target === 'all' ? count : selectedCount);
       if (await onSave(target, protect ? password : undefined, output)) { setPassword(''); setConfirm(''); }
-    } catch (error) { setError(error instanceof Error ? error.message : 'Invalid output settings'); }
+    } catch (error) { setError(error instanceof Error ? error.message : 'Export failed'); }
   }
   return <section className="save-panel" aria-labelledby="save-title">
-    <div className="save-summary"><div><h2 id="save-title">{t('Save PDF')}</h2>
-      <p>{t(count === 1 ? 'Download all {count} page in the order shown.' : 'Download all {count} pages in the order shown.', { count })}</p></div>
+    <div className="save-summary"><h2 id="save-title">{t('Save PDF')}</h2>
+      <p>{t(count === 1 ? 'Download all {count} page in the order shown.' : 'Download all {count} pages in the order shown.', { count })}</p>
+    </div>
+    <div className="save-controls">
+      <div className="field compression-field">
+        <label htmlFor="compression-level">{t('Compression level')}</label>
+        <select id="compression-level" aria-describedby="compression-hint" value={draft.compression} disabled={locked}
+          onChange={event => setDraft({ ...draft, compression: event.target.value as CompressionLevel })}>
+          <option value="off">{t('Off')}</option>
+          <option value="lossless">{t('Lossless · keep image quality')}</option>
+          <option value="balanced">{t('Balanced · good image quality')}</option>
+          <option value="small">{t('Smaller file · lower image quality')}</option>
+        </select>
+      </div>
       {exporting
         ? <button className="btn danger" onClick={onCancel}>{t('Cancel export')}</button>
         : <div className="save-actions">
           {selectedCount > 0 && <button className="btn" disabled={locked} onClick={() => void submit('selected')}>
             {t(selectedCount === 1 ? 'Save {count} selected page' : 'Save {count} selected pages', { count: selectedCount })}
           </button>}
-          <button ref={saveButtonRef} className="btn primary" disabled={locked} onClick={() => void submit('all')}><Icon name="download" />{t('Save PDF')}</button>
+          <button ref={saveButtonRef} className="btn primary" disabled={locked} onClick={() => void submit('all')}><Icon name="download" />{t(draft.compression === 'off' ? 'Save PDF' : 'Compress & save PDF')}</button>
         </div>}
     </div>
+    <p className="save-options-note" id="compression-hint">{t(draft.compression === 'off'
+      ? 'Choose a level to compress your PDF when you save.'
+      : 'Text stays selectable. Already optimized PDFs may stay the same size.')}</p>
     {error && <p ref={errorRef} className="notice" role="alert">{t(error)}</p>}
+    {children}
     <OutputOptions draft={draft} onChange={next => { setDraft(next); setError(''); }} count={previewTarget === 'all' ? count : selectedCount} disabled={locked} />
     <div className="output-preview-actions">
       <label className="field">{t('Preview output')}<select value={previewTarget} disabled={locked} onChange={event => { setPreviewTarget(event.target.value as SaveTarget); setError(''); }}>

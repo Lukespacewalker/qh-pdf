@@ -41,7 +41,21 @@ export const thaiMessages: Readonly<Record<string, string>> = {
   Language: 'ภาษา',
   'Page {current} of {total}': 'หน้า {current} จาก {total}',
 
-  'More from Quack & Honk': 'เครื่องมืออื่นจาก Quack & Honk',
+  'One PDF,': 'รวมเป็น PDF เดียว',
+  'Quack & Honk PDF · Merge, organize and compress PDFs': 'Quack & Honk PDF · รวมไฟล์ จัดหน้า และบีบอัด PDF',
+  'ready to send.': 'พร้อมส่งต่อ',
+  'Combine PDFs and photos, put the pages in order, and compress your document for sharing.':
+    'รวมไฟล์ PDF กับรูปถ่าย เรียงหน้าให้คนรับอ่านง่าย แล้วเลือกบีบอัดไฟล์ก่อนส่งได้',
+  'More from Quack & Honk': 'ผลงานอื่นจาก Quack & Honk',
+  'Resize and compress photos for the web.': 'ย่อและบีบอัดรูปถ่ายสำหรับใช้บนเว็บ',
+  'Meet Quack & Honk': 'รู้จัก Quack & Honk',
+  'Meet Quack & Honk (opens in a new tab)': 'รู้จัก Quack & Honk (เปิดในแท็บใหม่)',
+  'Apps and illustrated books by two brothers in Thailand.': 'แอปและหนังสือภาพจากสองพี่น้องชาวไทย',
+  'Compression settings': 'ตั้งค่าการบีบอัด',
+  'Compress & save PDF': 'บีบอัดและบันทึก PDF',
+  'Choose a level to compress your PDF when you save.': 'หากต้องการลดขนาดไฟล์ ให้เลือกระดับการบีบอัดก่อนบันทึก',
+  'Text stays selectable. Already optimized PDFs may stay the same size.':
+    'ข้อความยังเลือกคัดลอกได้ ส่วน PDF ที่บีบอัดมาแล้วอาจมีขนาดเท่าเดิม',
   'Tools with a little more quack.': 'เครื่องมือที่มีเสียงก๊าบเพิ่มอีกนิด',
   'QH PDF is one small thing from Quack & Honk. Visit our main site to see what else we’re making.':
     'QH PDF เป็นหนึ่งในเครื่องมือเล็ก ๆ จาก Quack & Honk แวะไปที่เว็บไซต์หลักเพื่อดูว่าเรากำลังทำอะไรอีกบ้าง',
