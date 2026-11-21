@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 const pdfRuntimeAsset = /\/assets\/PdfJsRuntime-.*\.js$/;
 const pdfRuntimeOrWorker = /PdfJsRuntime|pdf\.worker/i;
 const exportOrSecurityRuntime = /PdfExport\.worker|PdfSecurity|PdfCompression|qpdf|fontkit|NotoSansThaiLooped|\.wasm$/i;
+const editorAsset = /\/assets\/ActiveWorkspace-.*\.(js|css)$/;
 
 async function ready(page: Page) {
   await page.goto('/');
@@ -50,8 +51,10 @@ test('empty startup and image-only export leave PDF.js and security runtimes unl
   await ready(page);
 
   expect(requests.some(path => pdfRuntimeOrWorker.test(path) || exportOrSecurityRuntime.test(path))).toBe(false);
+  expect(requests.some(path => editorAsset.test(path))).toBe(false);
   await page.locator('input[type=file]').setInputFiles(await syntheticPng(page));
   await expectDecodedImages(page, 1);
+  expect(requests.filter(path => editorAsset.test(path)).map(path => path.split('.').at(-1)).sort()).toEqual(['css', 'js']);
   expect(requests.some(path => pdfRuntimeOrWorker.test(path) || exportOrSecurityRuntime.test(path))).toBe(false);
 
   const pending = page.waitForEvent('download');
@@ -61,6 +64,24 @@ test('empty startup and image-only export leave PDF.js and security runtimes unl
   expect(output.getPages().map(pdfPage => [pdfPage.getWidth(), pdfPage.getHeight()])).toEqual([[80, 60]]);
   expect(requests.some(path => /PdfExport\.worker/.test(path))).toBe(true);
   expect(requests.some(path => pdfRuntimeOrWorker.test(path) || /PdfSecurity|PdfCompression|qpdf|fontkit|NotoSansThaiLooped|\.wasm$/i.test(path))).toBe(false);
+});
+
+test('a failed editor request leaves a recoverable local workspace', async ({ page }) => {
+  await page.route(/\/assets\/ActiveWorkspace-.*\.js$/, route => route.fulfill({
+    status: 503, contentType: 'text/javascript', body: 'temporarily unavailable',
+  }));
+  await ready(page);
+  await page.locator('input[type=file]').setInputFiles(await syntheticPng(page));
+  await expect(page.getByRole('alert')).toContainText('The editing tools couldn’t load. Your documents are still in this tab.');
+  await expect(page.getByRole('button', { name: 'Add files' })).toBeDisabled();
+  await page.getByLabel('Remember work on this device').check();
+  await expect(page.getByTestId('recovery-status')).toHaveText('Saved on this device');
+
+  await page.unrouteAll();
+  await page.reload();
+  await page.getByRole('button', { name: 'Restore saved work' }).click();
+  await expectDecodedImages(page, 1);
+  await expect(page.getByRole('button', { name: 'Save PDF', exact: true })).toBeEnabled();
 });
 
 test('a failed PDF runtime request preserves an image workspace and offers an honest retry', async ({ page }) => {

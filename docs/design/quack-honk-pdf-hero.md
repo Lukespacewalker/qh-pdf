@@ -2,6 +2,8 @@
 
 The [current welcome layout](pdf-import-first.md#current-welcome-and-compression-design-2026-11-21) uses the paired illustration in a responsive file picker. It supersedes the layout and display dimensions below.
 
+The welcome image offers 160, 256, 384 and 512 pixel WebP variants. Each is a proportional, transparent resize of the original 640 × 320 asset, which remains available for high-density displays.
+
 > **Layout update, 2026-10-07:** The [current PDF import decision](pdf-import-first.md) places this same hero in a full-width import panel. Its display boxes and generated asset remain unchanged; the earlier split welcome layout is superseded.
 
 On 2026-10-05, the user requested a newly generated welcome mascot doing a PDF task, then refined the request to feature both Quack and Honk so visitors can recognize both characters. This supersedes the [single-Quack concept](quack-organizing-pdf.md) and the welcome-only requirement for original artwork in the [Editorial Stone design](../superpowers/specs/2026-10-05-editorial-stone-ui-design.md). The six supplied mascot files remain unchanged.

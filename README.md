@@ -77,7 +77,7 @@ All six original mascot assets and the Quack & Honk PDF welcome illustration are
 
 The production target is [pdf.quackandhonk.com](https://pdf.quackandhonk.com), served by Cloudflare Workers Static Assets. `wrangler.jsonc` publishes only `dist/`: there is no Worker script, processing API, database or document storage. Browser PDF processing remains local. The `public/_headers` policy restricts scripts and network connections to local assets, permits browser-created previews, and disables framing.
 
-Responses also set `Cache-Control: public, max-age=0, must-revalidate, no-transform` to prevent Cloudflare from automatically injecting its analytics beacon into this app, even when automatic Web Analytics is enabled for the parent zone. This follows [Cloudflare's documented `no-transform` behavior](https://developers.cloudflare.com/web-analytics/get-started/). Live network checks remain required because hosting settings can change independently of source code.
+HTML and stable public paths set `Cache-Control: public, max-age=0, must-revalidate, no-transform`. On HTML this prevents automatic injection of the analytics beacon even if Web Analytics is enabled on the parent zone. The `/assets/` directory is reserved for content-hashed, non-HTML build files. Those files are immutable for one year and eligible for edge compression. Live network checks verify the analytics exclusion. [Cloudflare Web Analytics](https://developers.cloudflare.com/web-analytics/get-started/) · [Static asset headers](https://developers.cloudflare.com/workers/static-assets/headers/)
 
 On Node.js 24, verify a clean install before an authorized deployment:
 

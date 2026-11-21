@@ -39,6 +39,14 @@ for (const width of [320, 390, 768]) {
     const chooser = page.getByRole('button', { name: 'Choose files', exact: true });
     await expect(chooser).toBeEnabled();
     await expect(chooser).toBeInViewport();
+    const hero = page.getByRole('img', { name: 'Quack and Honk arranging PDF pages together' });
+    await expect(hero).toHaveAttribute('width', '640');
+    await expect(hero).toHaveAttribute('height', '320');
+    const source = await hero.evaluate(async (image: HTMLImageElement) => {
+      await image.decode();
+      return new URL(image.currentSrc).pathname;
+    });
+    expect(source).toMatch(new RegExp(`^/assets/quack-honk-pdf-hero-${width <= 440 ? 160 : 256}-.+\\.webp$`));
     await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect((await chooser.boundingBox())!.height).toBeGreaterThanOrEqual(44);
