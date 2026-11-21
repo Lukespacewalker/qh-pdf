@@ -117,6 +117,7 @@
   .shell { padding-block: 24px 18px; }
   .workspace-layout { gap: 20px; }
   .welcome-copy { padding-block-end: 0; }
+  .welcome-copy h1 span { display: block; }
   .welcome-reassurance { margin-top: 10px; }
   .drop { display: grid; grid-template-columns: minmax(70px, .65fr) minmax(0, 1fr); justify-items: center; column-gap: 12px; padding: 24px; }
   .drop .mascot { grid-row: span 2; width: min(100%, 180px); height: auto; max-height: 92px; }
