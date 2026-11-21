@@ -59,18 +59,23 @@ test('all seven locally served mascot files decode and the empty state introduce
   }
 });
 
-test('shared header links to QH Image and the footer opens local privacy details', async ({ page }) => {
+test('header keeps focus on PDF, related cards link to the studio and QH Image, and footer explains privacy', async ({ page }) => {
   await page.goto('/');
 
   const header = page.getByRole('banner');
   await expect(header.getByText('Quack & Honk', { exact: true })).toBeVisible();
   await expect(header.getByText('PDF', { exact: true })).toBeVisible();
   await expect(header.locator('img')).toHaveAttribute('src', '/app-icon.svg');
-  const sibling = header.getByRole('link', { name: 'QH Image (opens in a new tab)', exact: true });
+  await expect(header.getByRole('link')).toHaveCount(0);
+  const related = page.getByRole('complementary', { name: 'More from Quack & Honk' });
+  const sibling = related.getByRole('link', { name: 'QH Image (opens in a new tab)', exact: true });
   await expect(sibling).toHaveAttribute('href', 'https://image.quackandhonk.com');
   await expect(sibling).toHaveAttribute('target', '_blank');
   await expect(sibling).toHaveAttribute('rel', 'noopener noreferrer');
-  await expect(header.getByRole('link')).toHaveCount(1);
+  const studio = related.getByRole('link', { name: 'Meet Quack & Honk (opens in a new tab)' });
+  await expect(studio).toHaveAttribute('href', 'https://quackandhonk.com');
+  await expect(studio).toHaveAttribute('target', '_blank');
+  await expect(studio).toHaveAttribute('rel', 'noopener noreferrer');
 
   const footer = page.getByRole('contentinfo');
   await expect(footer).toBeVisible();
@@ -79,7 +84,7 @@ test('shared header links to QH Image and the footer opens local privacy details
   await expect(link).toHaveAttribute('href', 'https://quackandhonk.com');
   await expect(link).toHaveAttribute('target', '_blank');
   await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-  await expect(page.locator('a[href="https://quackandhonk.com"]')).toHaveCount(1);
+  await expect(footer.locator('a[href="https://quackandhonk.com"]')).toHaveCount(1);
   const formats = footer.getByRole('button', { name: 'Formats & privacy' });
   const dialog = page.getByRole('dialog', { name: 'Formats & privacy' });
   await formats.focus();

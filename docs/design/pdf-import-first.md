@@ -1,5 +1,13 @@
 # PDF import and shared tool header
 
+## Current welcome and compression design, 2026-11-21
+
+The header carries the static PDF identity and language switch. The welcome screen mirrors the QH Image redesign with a two-part headline, a short description, and a file picker beside the paired mascot. On narrow screens the introduction sits above the picker. Two compact cards near the footer introduce QH Image and the Quack & Honk studio. The cards appear only in the empty workspace.
+
+After import, the Compression settings link beside Add files takes keyboard and pointer users directly to the level selector. Choosing a level changes both save labels to indicate compression for all pages or the selected subset. The default is Off. The save panel reports progress, failures and the measured result beside the action.
+
+This decision supersedes the earlier full-width desktop picker, literal headline, numbered steps and outbound header link. Earlier decisions below document their original scope.
+
 **Header and footer update, 2026-11-21:** Follow the current [Quack & Honk Image Optimizer](https://image.quackandhonk.com/) header and footer. The header uses the PDF icon, the company wordmark and a PDF descriptor. Keep the wordmark static so it cannot reload an open workspace. At compact widths the QH Image link moves to the footer. The semantic footer pairs the studio credit with a Formats & privacy dialog covering PDF-specific formats and local recovery. This supersedes the QH PDF wordmark, divided subtitle and bottom brand banner described below.
 
 **Current decision, 2026-10-07:** The user requested the QH Image header style, direct copy, a full-width file import entry point, and explanations below it. This supersedes the split welcome composition, “Bring your pages together.” headline and header in the [Editorial Stone design](../superpowers/specs/2026-10-05-editorial-stone-ui-design.md). Its palette, local fonts, processing boundaries and workspace controls remain applicable.

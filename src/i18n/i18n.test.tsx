@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { SiteFooter } from '../brand/SiteFooter';
-import { Capabilities } from '../workspace/Capabilities';
+import { RelatedTools } from '../brand/RelatedTools';
 import { initialOutputDraft, OutputOptions } from '../workspace/OutputOptions';
 import { WelcomePanel } from '../workspace/WelcomePanel';
 import { I18nProvider, translate } from './i18n';
@@ -17,16 +17,17 @@ describe('Thai UI translation', () => {
     const html = renderToStaticMarkup(
       <I18nProvider initialLanguage="th">
         <WelcomePanel busy={false} locked={false} drag={false} onChoose={() => {}} onDragChange={() => {}} onDrop={() => {}} error={null} history={null} />
-        <Capabilities />
+        <RelatedTools />
         <SiteFooter />
       </I18nProvider>,
     );
 
-    expect(html).toContain('เพิ่ม PDF หรือรูปภาพ');
-    expect(html).toContain('รวมไฟล์และจัดหน้า PDF');
+    expect(html).toContain('รวมเป็น PDF เดียว');
+    expect(html).toContain('พร้อมส่งต่อ');
+    expect(html).toContain('เลือกบีบอัดไฟล์ก่อนส่งได้');
     expect(html).toContain('เลือกไฟล์');
-    expect(html).toContain('จัดหน้า');
-    expect(html).toContain('เพิ่มไฟล์');
+    expect(html).toContain('รู้จัก Quack &amp; Honk');
+    expect(html).toContain('ย่อและบีบอัดรูปถ่าย');
     expect(html).toContain('เครื่องมือจาก Quack &amp; Honk');
     expect(html).toContain('ฟอร์แมตและความเป็นส่วนตัว');
     expect(html).not.toContain('Bring your pages');

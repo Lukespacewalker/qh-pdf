@@ -8,7 +8,7 @@ import { ThumbnailScheduler } from '../engine/ThumbnailScheduler';
 import { RecoveryPanel } from '../recovery/RecoveryPanel';
 import { FullPagePreviewDialog } from './FullPagePreviewDialog';
 import { PageCard } from './PageCard';
-import { Capabilities } from './Capabilities';
+import { RelatedTools } from '../brand/RelatedTools';
 import { SavePanel, type SaveTarget } from './SavePanel';
 import { usePasswordImport } from './usePasswordImport';
 import { useWorkspaceStore } from './useWorkspaceStore';
@@ -91,18 +91,12 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
     if (editLocked) return false;
     store.clearError();
     const current = useWorkspaceStore.getState();
-    let snapshot: WorkspaceState;
-    try {
-      snapshot = target === 'selected'
-        ? createSelectedExportWorkspace(current.history.present)
-        : {
-          pages: current.history.present.pages.map(page => ({ ...page, ...(page.crop && { crop: { ...page.crop } }) })),
-          selectedPageIds: [...current.history.present.selectedPageIds],
-        };
-    } catch (error) {
-      useWorkspaceStore.setState({ error: error instanceof Error ? error.message : 'Export failed' });
-      return false;
-    }
+    const snapshot: WorkspaceState = target === 'selected'
+      ? createSelectedExportWorkspace(current.history.present)
+      : {
+        pages: current.history.present.pages.map(page => ({ ...page, ...(page.crop && { crop: { ...page.crop } }) })),
+        selectedPageIds: [...current.history.present.selectedPageIds],
+      };
     if (snapshot.pages.length === 0) return false;
     const documents = new Map(current.documents);
     const controller = new AbortController();
@@ -130,8 +124,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
         setExportNotice('Export cancelled. Your workspace is still here.');
         return false;
       }
-      useWorkspaceStore.setState({ error: error instanceof Error ? error.message : 'Export failed' });
-      return false;
+      throw error;
     } finally {
       if (exportJob.current === controller) exportJob.current = null;
       setExportProgress(null);
@@ -157,11 +150,13 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
         <WelcomePanel busy={store.busy} locked={editLocked} drag={drag} onChoose={() => input.current?.click()}
           onDragChange={setDrag} onDrop={files => void add(files)} error={error}
           history={(store.history.past.length > 0 || store.history.future.length > 0) ? historyActions : null} />
-        <Capabilities />
       </> : <>
         <div className="head">
           <div><p className="eyebrow">{t('Document workspace')}</p><h1>{t('Your document')}</h1><p className="sub">{t('{count} pages', { count: ws.pages.length })}</p></div>
-          <button className="btn add-files" onClick={() => input.current?.click()} disabled={editLocked}><Icon name="add" />{t('Add files')}</button>
+          <div className="document-actions">
+            <button className="btn add-files" onClick={() => input.current?.click()} disabled={editLocked}><Icon name="add" />{t('Add files')}</button>
+            <a href="#compression-level">{t('Compression settings')}</a>
+          </div>
         </div>
         {error}
         <div className="page-editing-region">
@@ -211,28 +206,28 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
         </DndContext>
         </div>
         <SavePanel count={ws.pages.length} selectedCount={selected} locked={editLocked} exporting={exporting} onSave={save} onCancel={cancelExport} saveButtonRef={saveButton}
-          engine={engine} workspace={ws} documents={store.documents} />
-        {exporting && <div className="status" role="status"><MascotState state="working" alt={t('Quack working')} /><div className="export-status">
-          <strong>{exportProgress?.phase === 'protecting' ? t('Protecting your PDF…') : exportProgress?.phase === 'compressing' ? t('Compressing your PDF…') :
-            t('Creating page {current} of {total}…', { current: exportProgress?.completed ?? 0, total: exportProgress?.total ?? exportTotal })}</strong>
-          <progress aria-label={t('Creating PDF')} max={exportProgress?.total ?? exportTotal}
-            value={exportProgress?.completed ?? 0} />
-          <div className="sub">{t('Everything is being processed in this browser.')}</div>
-        </div></div>}
-        {exportNotice && <div className="save-complete" role="status">{t(exportNotice)}</div>}
-        {done && <div className="save-complete" role="status"><strong>{t('Your PDF is ready.')}</strong>{' '}
-          {t('Final file: {size} KB. Created without uploading your document.', {
-            size: new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(savedBytes / 1024),
-          })}
-          {compressionInfo && <><br />{compressionInfo.afterBytes < compressionInfo.beforeBytes
-            ? t('Compression saved {percent}% before password protection ({before} KB → {after} KB).', {
-              percent: Math.round((1 - compressionInfo.afterBytes / compressionInfo.beforeBytes) * 100),
-              before: new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(compressionInfo.beforeBytes / 1024),
-              after: new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(compressionInfo.afterBytes / 1024),
-            })
-            : t('Compression did not reduce this file’s size.')}{' '}
-            {t('Compression is compared before password protection.')}</>}
-        </div>}
+          engine={engine} workspace={ws} documents={store.documents}>
+          {exporting && <div className="status" role="status"><MascotState state="working" alt={t('Quack working')} /><div className="export-status">
+            <strong>{exportProgress?.phase === 'protecting' ? t('Protecting your PDF…') : exportProgress?.phase === 'compressing' ? t('Compressing your PDF…') :
+              t('Creating page {current} of {total}…', { current: exportProgress?.completed ?? 0, total: exportProgress?.total ?? exportTotal })}</strong>
+            <progress aria-label={t('Creating PDF')} max={exportProgress?.total ?? exportTotal}
+              value={exportProgress?.phase === 'assembling' ? exportProgress.completed : undefined} />
+            <div className="sub">{t('Everything is being processed in this browser.')}</div>
+          </div></div>}
+          {exportNotice && <div className="save-complete" role="status">{t(exportNotice)}</div>}
+          {done && <div className="save-complete" role="status"><strong>{t('Your PDF is ready.')}</strong>{' '}
+            {t('Final file: {size} KB. Created without uploading your document.', {
+              size: new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(savedBytes / 1024),
+            })}
+            {compressionInfo && <><br />{compressionInfo.afterBytes < compressionInfo.beforeBytes
+              ? t('Compression saved {percent}% before password protection ({before} KB → {after} KB).', {
+                percent: Math.round((1 - compressionInfo.afterBytes / compressionInfo.beforeBytes) * 100),
+                before: new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(compressionInfo.beforeBytes / 1024),
+                after: new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(compressionInfo.afterBytes / 1024),
+              })
+              : t('Compression did not reduce this file’s size.')}</>}
+          </div>}
+        </SavePanel>
       </>}
     </div>
     <RecoveryPanel importDocument={importDocument} locked={locked || Boolean(activePage)} onRestoring={setRestoring} onPending={setRecoveryPending} />
@@ -242,6 +237,7 @@ export function WorkspaceScreen({ engine }: { engine: PdfEngine }) {
         <dt>Delete / Backspace</dt><dd>{t('Delete selected pages')}</dd><dt>Escape</dt><dd>{t('Deselect all')}</dd><dt>Ctrl / ⌘ S</dt><dd>{t('Save PDF with the current Save options')}</dd></dl>
       <p>{t('Shortcuts pause while typing, dragging, processing or using a dialog.')}</p>
     </details>
+    {!ws.pages.length && <RelatedTools />}
     {preview && <FullPagePreviewDialog pageId={preview.pageId} pages={ws.pages} documents={store.documents}
       engine={engine} opener={preview.opener} onNavigate={pageId => setPreview(current => current ? { ...current, pageId } : null)}
       onRotate={store.rotatePage} onClose={() => setPreview(null)} />}

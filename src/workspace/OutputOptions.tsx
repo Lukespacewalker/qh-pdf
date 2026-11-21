@@ -108,11 +108,5 @@ export function OutputOptions({ draft, onChange, count, disabled }: {
         <label className="field">{t('Watermark color')}<input type="color" value={draft.watermarkColor} onChange={event => set({ watermarkColor: event.target.value })} /></label>
       </div>}
     </details>
-    <details><summary>{t('Compression')}</summary>
-      <label className="field">{t('Compression level')}<select value={draft.compression} onChange={event => set({ compression: event.target.value as CompressionLevel })}>
-        <option value="off">{t('Off')}</option><option value="lossless">{t('Lossless · keep image quality')}</option><option value="balanced">{t('Balanced · good image quality')}</option><option value="small">{t('Smaller file · lower image quality')}</option>
-      </select></label>
-      <p className="save-options-note">{t('Balanced and Smaller file may reduce image quality. Text stays selectable. Size savings depend on the document; an already optimized PDF may stay the same size.')}</p>
-    </details>
   </fieldset>;
 }

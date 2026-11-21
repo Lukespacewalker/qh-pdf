@@ -1,23 +1,22 @@
 import { expect, test } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 
-test('desktop homepage starts with a full-width PDF import and explains the tools below', async ({ page }) => {
+test('desktop homepage pairs the headline with the PDF picker and keeps studio links below it', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add PDFs or images');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('One PDF, ready to send.');
   const chooser = page.getByRole('button', { name: 'Choose files', exact: true });
   await expect(chooser).toBeEnabled();
   await expect(chooser).toBeInViewport();
-  const content = await page.locator('.workspace-content').boundingBox();
-  const explanation = await page.locator('.capabilities').boundingBox();
+  const headline = await page.getByRole('heading', { level: 1 }).boundingBox();
+  const related = await page.getByRole('complementary', { name: 'More from Quack & Honk' }).boundingBox();
   const drop = await page.locator('.drop').boundingBox();
-  expect(content).not.toBeNull();
-  expect(explanation).not.toBeNull();
+  expect(headline).not.toBeNull();
+  expect(related).not.toBeNull();
   expect(drop).not.toBeNull();
-  expect(drop!.x).toBeCloseTo(content!.x, 0);
-  expect(drop!.width).toBeCloseTo(content!.width, 0);
-  expect(explanation!.y).toBeGreaterThanOrEqual(drop!.y + drop!.height);
-  await expect(page.getByRole('heading', { name: 'Merge and organize PDFs', exact: true })).toBeVisible();
+  expect(drop!.x).toBeGreaterThan(headline!.x + headline!.width);
+  expect(headline!.y).toBeLessThan(drop!.y + drop!.height);
+  expect(related!.y).toBeGreaterThanOrEqual(drop!.y + drop!.height);
 
   // Keyboard activation proves the prominent control opens the real input.
   await chooser.focus();
@@ -28,6 +27,7 @@ test('desktop homepage starts with a full-width PDF import and explains the tool
   pdf.addPage([240, 360]);
   await fileChooser.setFiles({ name: 'welcome.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await pdf.save()) });
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your document');
+  await expect(page.getByRole('complementary', { name: 'More from Quack & Honk' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Save PDF', exact: true })).toBeEnabled();
 });
 
@@ -35,17 +35,18 @@ for (const width of [320, 390, 768]) {
   test(`homepage at ${width}px keeps import and formats visible without overflow`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add PDFs or images');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('One PDF, ready to send.');
     const chooser = page.getByRole('button', { name: 'Choose files', exact: true });
     await expect(chooser).toBeEnabled();
     await expect(chooser).toBeInViewport();
     await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect((await chooser.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    const sibling = page.getByRole('link', { name: 'QH Image (opens in a new tab)' });
-    const chrome = page.getByRole(width <= 600 ? 'contentinfo' : 'banner');
-    await expect(chrome.getByRole('link', { name: 'QH Image (opens in a new tab)' })).toBeVisible();
-    await expect(sibling).toHaveCount(1);
+    await expect(page.getByRole('banner').getByRole('link')).toHaveCount(0);
+    const related = page.getByRole('complementary', { name: 'More from Quack & Honk' });
+    const sibling = related.getByRole('link', { name: 'QH Image (opens in a new tab)' });
+    await expect(related.getByRole('link')).toHaveCount(2);
+    await expect(page.getByRole('link', { name: 'QH Image (opens in a new tab)' })).toHaveCount(1);
     await sibling.scrollIntoViewIfNeeded();
     await expect(sibling).toBeInViewport();
     expect((await sibling.boundingBox())!.height).toBeGreaterThanOrEqual(44);
@@ -68,7 +69,8 @@ test('compact header switches language with the keyboard and keeps Thai import v
   await page.keyboard.press('Enter');
   await expect(thai).toHaveAttribute('aria-pressed', 'true');
   await expect(english).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('เพิ่ม PDF หรือรูปภาพ');
+  await expect(page).toHaveTitle('Quack & Honk PDF · รวมไฟล์ จัดหน้า และบีบอัด PDF');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('รวมเป็น PDF เดียว พร้อมส่งต่อ');
   await expect(page.getByRole('button', { name: 'เลือกไฟล์', exact: true })).toBeInViewport();
   await expect(page.getByText('PDF · JPG / JPEG · PNG · WebP', { exact: true })).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -80,7 +82,7 @@ test('compact header switches language with the keyboard and keeps Thai import v
   await page.reload();
   await expect(thai).toHaveAttribute('aria-pressed', 'true');
   await english.click();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Add PDFs or images');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('One PDF, ready to send.');
 });
 
 test('editorial fonts decode from same-origin bundled assets', async ({ page, baseURL }) => {

@@ -229,11 +229,11 @@ test('compression levels preserve numbered text and crop, reduce eligible images
   await page.locator('input[type=file]').setInputFiles({ name: 'compression.pdf', mimeType: 'application/pdf', buffer: Buffer.from(await source.save()) });
   await page.getByText('Page numbers · Off', { exact: true }).click();
   await page.getByLabel('Add page numbers', { exact: true }).check();
-  await page.getByText('Compression', { exact: true }).click();
+  await expect(page.getByRole('combobox', { name: 'Compression level', exact: true })).toHaveValue('off');
   const outputs = new Map<string, Buffer>();
   for (const level of ['off', 'lossless', 'balanced', 'small']) {
     await page.getByRole('combobox', { name: 'Compression level', exact: true }).selectOption(level);
-    const bytes = await downloadBytes(page); outputs.set(level, bytes);
+    const bytes = await downloadBytes(page, level === 'off' ? 'Save PDF' : 'Compress & save PDF'); outputs.set(level, bytes);
     const inputs = await page.evaluate(() => (window as typeof window & {
       __compressionInputs: { level: string; byteLength: number }[];
     }).__compressionInputs);
@@ -255,7 +255,7 @@ test('compression levels preserve numbered text and crop, reduce eligible images
   await page.getByRole('checkbox', { name: 'Require a password to open the saved PDF' }).check();
   await page.getByLabel('New PDF password', { exact: true }).fill('local-finish-test');
   await page.getByLabel('Confirm password', { exact: true }).fill('local-finish-test');
-  const protectedBytes = await downloadBytes(page);
+  const protectedBytes = await downloadBytes(page, 'Compress & save PDF');
   const toolkit = await createPdfToolkit();
   await expect(toolkit.unlock(protectedBytes, { password: 'wrong' })).rejects.toThrow();
   const reopened = await PDFDocument.load(await toolkit.unlock(protectedBytes, { password: 'local-finish-test' }));
@@ -273,22 +273,49 @@ test('failed font and compression jobs are visible and retryable, cancelled comp
   await expect(page.getByRole('alert')).toBeVisible(); expect(downloads).toBe(0);
   await page.unroute('**/*NotoSansThaiLooped*.ttf');
   expect((await download(page)).getPageCount()).toBe(4);
-  await page.getByText('Compression', { exact: true }).click();
   await page.getByRole('combobox', { name: 'Compression level', exact: true }).selectOption('balanced');
   await page.route('**/*qpdf*.wasm', route => route.abort());
-  await page.getByRole('button', { name: 'Save PDF', exact: true }).click();
-  await expect(page.getByRole('alert')).toBeVisible(); expect(downloads).toBe(1);
+  await page.getByRole('button', { name: 'Compress & save PDF', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Save PDF' }).getByRole('alert')).toBeInViewport(); expect(downloads).toBe(1);
   await page.unroute('**/*qpdf*.wasm');
   let release!: () => void;
   const held = new Promise<void>(resolve => { release = resolve; });
   await page.route('**/*qpdf*.wasm', async route => { await held; await route.continue().catch(() => {}); });
-  await page.getByRole('button', { name: 'Save PDF', exact: true }).click();
+  await page.getByRole('button', { name: 'Compress & save PDF', exact: true }).click();
   await expect(page.getByText('Compressing your PDF…', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Cancel export', exact: true }).click();
   await expect(page.getByText('Export cancelled. Your workspace is still here.', { exact: true })).toBeVisible();
   release(); await page.unroute('**/*qpdf*.wasm'); expect(downloads).toBe(1);
-  expect((await download(page)).getPageCount()).toBe(4);
+  expect((await download(page, 'Compress & save PDF')).getPageCount()).toBe(4);
   expect(downloads).toBe(2);
+});
+
+test('Thai mobile compression shortcut focuses the level picker and saves from the keyboard', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await importFixture(page);
+  await page.getByRole('button', { name: 'ไทย', exact: true }).click();
+  const shortcut = page.getByRole('link', { name: 'ตั้งค่าการบีบอัด' });
+  await shortcut.focus();
+  await page.keyboard.press('Enter');
+  const level = page.getByRole('combobox', { name: 'ระดับการบีบอัด' });
+  await expect(level).toBeFocused();
+  await expect(level).toBeInViewport();
+  await level.press('ArrowDown');
+  await expect(level).toHaveValue('lossless');
+  await level.press('Tab');
+  const save = page.getByRole('button', { name: 'บีบอัดและบันทึก PDF' });
+  await expect(save).toBeFocused();
+  const pending = page.waitForEvent('download');
+  await save.press('Enter');
+  const downloaded = await pending;
+  const pdf = await PDFDocument.load(await readFile((await downloaded.path())!));
+  expect(pdf.getPageCount()).toBe(4);
+  await expect(page.locator('.save-panel .save-complete')).toBeInViewport();
+  await page.getByRole('button', { name: 'เลือกหน้า 2 จาก finishing.pdf', exact: true }).click();
+  const subset = await download(page, 'บีบอัดและบันทึกหน้าที่เลือก 1 หน้า');
+  expect(subset.getPageCount()).toBe(1);
+  expect((await texts(subset))[0]).toContain('Source 90');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('image crop rotates with content and survives recovery with matching thumbnail and exported geometry', async ({ page }) => {
