@@ -1,6 +1,6 @@
 # Quack & Honk PDF hero
 
-The [current welcome layout](pdf-import-first.md#current-welcome-and-compression-design-2026-11-21) uses the paired illustration in a responsive file picker. It supersedes the layout and display dimensions below.
+The [current welcome layout](pdf-import-first.md#welcome-page-order-2026-11-22) uses the paired illustration in a responsive file picker. It supersedes the layout and display dimensions below.
 
 The welcome image offers 160, 256, 384 and 512 pixel WebP variants. Each is a proportional, transparent resize of the original 640 × 320 asset, which remains available for high-density displays.
 
