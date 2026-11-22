@@ -69,6 +69,7 @@ test('header keeps focus on PDF, related cards link to the studio and QH Image, 
   await expect(header.getByRole('link')).toHaveCount(0);
   const related = page.getByRole('complementary', { name: 'More from Quack & Honk' });
   const sibling = related.getByRole('link', { name: 'QH Image (opens in a new tab)', exact: true });
+  await expect(sibling).toHaveAccessibleDescription('Compress images or convert PNG to WebP on your device.');
   await expect(sibling).toHaveAttribute('href', 'https://image.quackandhonk.com');
   await expect(sibling).toHaveAttribute('target', '_blank');
   await expect(sibling).toHaveAttribute('rel', 'noopener noreferrer');

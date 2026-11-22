@@ -10,7 +10,7 @@ export function RelatedTools() {
       <a href="https://image.quackandhonk.com" target="_blank" rel="noopener noreferrer"
         aria-label={t('QH Image (opens in a new tab)')} aria-describedby="related-image-description">
         <span className="related-mark"><img src={imageIcon} alt="" width="34" height="34" /></span>
-        <div><h3 translate="no">QH Image</h3><p id="related-image-description">{t('Resize and compress photos for the web.')}</p></div>
+        <div><h3 translate="no">QH Image</h3><p id="related-image-description">{t('Compress images or convert PNG to WebP on your device.')}</p></div>
         <Icon name="external" />
       </a>
       <a href="https://quackandhonk.com" target="_blank" rel="noopener noreferrer"

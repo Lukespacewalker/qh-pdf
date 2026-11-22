@@ -47,7 +47,7 @@ export const thaiMessages: Readonly<Record<string, string>> = {
   'Combine PDFs and photos, put the pages in order, and compress your document for sharing.':
     'รวมไฟล์ PDF กับรูปถ่าย เรียงหน้าให้คนรับอ่านง่าย แล้วเลือกบีบอัดไฟล์ก่อนส่งได้',
   'More from Quack & Honk': 'ผลงานอื่นจาก Quack & Honk',
-  'Resize and compress photos for the web.': 'ย่อและบีบอัดรูปถ่ายสำหรับใช้บนเว็บ',
+  'Compress images or convert PNG to WebP on your device.': 'บีบอัดรูปหรือแปลง PNG เป็น WebP บนเครื่องของคุณ',
   'Meet Quack & Honk': 'รู้จัก Quack & Honk',
   'Meet Quack & Honk (opens in a new tab)': 'รู้จัก Quack & Honk (เปิดในแท็บใหม่)',
   'Apps and illustrated books by two brothers in Thailand.': 'แอปและหนังสือภาพจากสองพี่น้องชาวไทย',
