@@ -27,7 +27,7 @@ describe('Thai UI translation', () => {
     expect(html).toContain('เลือกบีบอัดไฟล์ก่อนส่งได้');
     expect(html).toContain('เลือกไฟล์');
     expect(html).toContain('รู้จัก Quack &amp; Honk');
-    expect(html).toContain('ย่อและบีบอัดรูปถ่าย');
+    expect(html).toContain('บีบอัดรูปหรือแปลง PNG เป็น WebP บนเครื่องของคุณ');
     expect(html).toContain('เครื่องมือจาก Quack &amp; Honk');
     expect(html).toContain('ฟอร์แมตและความเป็นส่วนตัว');
     expect(html).not.toContain('Bring your pages');
